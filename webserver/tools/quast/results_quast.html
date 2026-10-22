@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load citation_tags %}
+
+{% block css %}
+<style>
+.sample-frame {
+    width: calc(100% - 2rem);
+    height: 80vh;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    border: 5px solid #212529;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom: 20px; padding-left: 20px; margin-left: 0; width: 100%;">
+    <div style="width: 100%; display: flex">
+        <div class="file-field input-field" style="width: 75%">
+            <h4 style="margin:0;">QUAST Results: {{ job_id }}</h4>
+        </div>
+    </div>
+</div>
+
+<button id="downloadResults"
+        class="btn"
+        style="width:18%;margin-left:1rem;margin-top:15px;margin-bottom:15px;"
+        onclick="downloadResults();">
+  Download results
+</button>
+
+{% tool_citation job_id %}
+
+  {% if quast_html_files %}
+  <span style="padding-left: 10px; margin-left: 0; font-size: large;">Select view:</span>
+    <select id="fileSelect"
+            class="browser-default"
+            style="display:inline-block;max-width:280px;"
+            onchange="changeQuastFile()">
+        {% for f in quast_html_files %}
+          <option value="{{ f }}"{% if f == current_quast_file %} selected{% endif %}>{{ f }}</option>
+        {% endfor %}
+    </select>
+  {% endif %}
+
+{% if current_quast_file %}
+<iframe id="quastFrame"
+        src="{% url 'baclab:quast_file' job_id current_quast_file %}"
+        class="sample-frame"></iframe>
+{% else %}
+<p style="padding: 20px;">No HTML reports found. Click Download results to view the raw output.</p>
+{% endif %}
+
+<script>
+function downloadResults() {
+  const jobId = "{{ job_id }}";
+  if (!jobId) {
+    alert("Missing job id");
+    return;
+  }
+  const url = "{% url 'baclab:results' %}?job_id=" + encodeURIComponent(jobId) + "&download=True";
+  window.location.href = url;
+}
+
+function changeQuastFile() {
+  const sel = document.getElementById('fileSelect');
+  const frame = document.getElementById('quastFrame');
+  if (!sel || !frame || !sel.value) return;
+  const jobId = "{{ job_id }}";
+  frame.src = "/quast/file/" + encodeURIComponent(jobId) + "/" + sel.value;
+}
+</script>
+
+{% endblock %}

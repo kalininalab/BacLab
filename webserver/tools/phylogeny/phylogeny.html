@@ -1,0 +1,102 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} Phylogeny {% endblock %}
+{% block tool_description %}
+Construct phylogenetic trees from input sequences. <strong>Expected input:</strong> Sequence FASTA files <code>(.fasta, .fna)</code>.
+{% endblock %}
+
+
+{% block accepted_files %} .fasta, .fna {% endblock %}
+
+{% block toolEntries %}
+  <div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 20px; margin-right: 50px;">
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="phylogeny-type-container">
+        <label for="phylogeny_type" style="margin-top: -10px;">Phylogenetic Tree Tool:</label>
+        <br>
+        <br>
+        <select class="browser-default" name="phylogeny_type" id="phylogeny_type">
+            <option value="iqtree">IQTree (Slow/Very Good Accuracy)</option>
+            <option value="fasttree">FastTree (Fast/Good Accuracy)</option>
+        </select>
+
+
+    </div>
+
+    {% if strain_options %}
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="additional-strains-container">
+        <br>
+        <br>
+        <label for="additional_strains" style="margin-top: auto;">Add additional strains:</label>
+        <select class="browser-default" onchange="updatePhylogenyUI()" name="additional_strains" id="additional_strains">
+            <option value="none" selected>None</option>
+            {% for option in strain_options %}
+                <option value="{{ option.value }}">{{ option.label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% else %}
+    <input type="hidden" name="additional_strains" id="additional_strains" value="none">
+    {% endif %}
+  </div>
+
+  <script>
+    // Load strain options
+    const strain_config = {
+      {% for option in strain_options %}
+        "{{ option.value }}": {{ option.show_warning|lower }},
+      {% endfor %}
+    };
+
+    function updatePhylogenyUI() {
+        const strain_select = document.getElementById("additional_strains");
+        if (!strain_select) return;
+        
+        const warning_div = document.getElementById("db-warning-message");
+        const selectedValue = strain_select.value;
+
+        // Toggle visibility of the warning div based on the lookup
+        if (warning_div) {
+            if (strain_config[selectedValue]) {
+                warning_div.style.display = "block";
+            } else {
+                warning_div.style.display = "none";
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+
+<script>
+
+    function checkFields() {
+        const useExample = document.getElementById("use_example_data");
+        if (useExample && (useExample.value === "true" || useExample.value === "1")) {
+            return true;
+        }
+
+        const fasta_input = document.getElementById('fasta').value;
+        // check if there is more than one sequence in the fasta input, if it does, activate the co-occuring gene blast option
+        const sequence_count = (fasta_input.match(/>/g) || []).length;
+        const additional_strains_elem = document.getElementById('additional_strains');
+        const additional_strains_val = additional_strains_elem ? additional_strains_elem.value : "none";
+        
+        if (sequence_count < 4 && additional_strains_val === "none")
+        {
+            alert("Minimum required amount of sequences for phylogenetic tree creation is 4, please add more sequences or use additional strains option")
+            return false;
+        }
+
+        return true;
+    }
+
+</script>
+    
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+
+updatePhylogenyUI();
+
+{% endblock %}

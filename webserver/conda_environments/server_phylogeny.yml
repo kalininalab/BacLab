@@ -1,0 +1,10 @@
+name: server_phylogeny
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+  - r
+dependencies:
+  - fasttree==2.2.0
+  - iqtree==3.1.2
+  - mafft==7.525

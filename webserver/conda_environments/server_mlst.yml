@@ -1,0 +1,8 @@
+name: server_mlst
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.10.14
+  - mlst==2.35.0

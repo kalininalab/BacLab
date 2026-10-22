@@ -1,0 +1,41 @@
+{% extends "results.html" %}
+
+{% block results %}
+<div id="blastResultsTable_div" class="">
+    <div style="display: flex; justify-content: space-between;">
+        <div style="width: 100%; margin-right: 20px;" id="blastTabularTable" class="">
+            <!-- BlastResultsTable table -->
+            <div style="padding-left: 0; margin-left: 20px;">
+                <h4>Blast Results:</h4>
+                <div style="height: 75vh; overflow: auto;">
+                    {{ blastResultsTable|safe }}
+                </div>
+            </div>
+            <script>
+                    $(document).ready(function() {
+                        const table = new DataTable('#blastResultsTable', {
+                            language: { searchPlaceholder: 'Filter results' },
+                            layout: {
+                                topStart: 'search',
+                                bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                                topEnd: null,
+                                bottomEnd: 'pageLength'
+                            },
+                            pageLength: 100
+                    });
+                });
+            </script>
+
+            {% if cooccurrenceTable %}
+            <div style="padding-left: 0; margin-left: 20px; margin-top: 40px;">
+                <h4>Co-occurence Genes Results:</h4>
+                <div style="height: 75vh; overflow: auto;">
+                    {{ cooccurrenceTable|safe }}
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock results %}
+

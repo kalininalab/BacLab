@@ -1,0 +1,31 @@
+{% extends "results.html" %}
+
+{% block results %}
+<div id="Taxonomy_Results_div" class="">
+    <div style="display: flex; justify-content: space-between;">
+        <div style="width: 100%; margin-right: 20px;" id="blastTabularTable" class="">
+            <div style="padding-left: 0; margin-left: 20px;">
+                <h4>Taxonomy Results:</h4>
+                <div style="max-height: 60vh; overflow: auto;">
+                    {{ taxonomyResultsTable|safe }}
+                </div>
+            </div>
+            <script>
+                    $(document).ready(function() {
+                        const table = new DataTable('#taxonomyResultsTable', {
+                            language: { searchPlaceholder: 'Filter results' },
+                            layout: {
+                                topStart: 'search',
+                                bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                                topEnd: null,
+                                bottomEnd: 'pageLength'
+                            },
+                            pageLength: 25
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</div>
+{% endblock results %}
+

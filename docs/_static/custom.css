@@ -1,0 +1,5 @@
+/* the embedded demonstrations on the Demos page */
+.demo-frame { width: 100%; height: 78vh; min-height: 520px; border: 1px solid #c9cde6; border-radius: 4px; background: #fff; }
+.demo-links a { display: inline-block; margin: 0 14px 10px 0; padding: 6px 14px; border-radius: 4px; background: #6366f1; color: #fff !important; text-decoration: none; }
+.demo-links a:hover { background: #4f46e5; }
+.wy-nav-content { max-width: 1000px; }

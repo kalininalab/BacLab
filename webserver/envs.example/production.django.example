@@ -1,0 +1,59 @@
+# BacLab - production settings of the Django, Celery and nginx containers.
+# Created from this template by `./baclab install`; edit it, then `./baclab restart`.
+# Never commit the real file (webserver/.envs/ is git-ignored).
+
+DJANGO_SETTINGS_MODULE=config.settings.production
+DJANGO_SECRET_KEY=@SECRET_KEY@
+DJANGO_ADMIN_URL=admin/
+# Host names the site is reachable under, comma separated (an IP address is fine)
+DJANGO_ALLOWED_HOSTS=@ALLOWED_HOSTS@
+# True once nginx has certificates (webserver/../certs/fullchain.pem + privkey.pem); then also use https:// in WEBSITE_LINK
+DJANGO_SECURE_SSL_REDIRECT=@SSL_REDIRECT@
+WEBSITE_LINK=@WEBSITE_LINK@
+
+USE_DOCKER=yes
+REDIS_URL=redis://redis:6379/0
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_FLOWER_USER=@FLOWER_USER@
+CELERY_FLOWER_PASSWORD=@FLOWER_PASSWORD@
+
+# The administrator account is created on the first start (an existing account is never changed here)
+ADMIN_USER=@ADMIN_USER@
+ADMIN_PASS=@ADMIN_PASS@
+ADMIN_EMAIL=@ADMIN_EMAIL@
+
+# Optional user accounts: people can always use the tools without logging in. With accounts they see their previous jobs
+# (and those of their group). ACCOUNTS_ENABLED=False removes login/groups from the site; ALLOW_SIGNUP=True lets visitors register
+# themselves (otherwise you create accounts in the admin).
+ACCOUNTS_ENABLED=False
+ALLOW_SIGNUP=False
+
+# Optional: only accept notification e-mail addresses whose domain (the part after @) matches one of these regular expressions,
+# comma separated, e.g. example\.org,.*\.edu - or manage this in the admin (E-mail policy), which takes precedence. Empty = any address.
+NOTIFICATION_EMAIL_DOMAINS=
+
+# Monitoring: administrators are told once about jobs stuck longer than this (hours) and about full disks (percent);
+# NOTIFY_WEBHOOK_URL (Slack / Teams / any URL taking {"text": ...}) gets the same messages
+STUCK_RUNNING_HOURS=48
+STUCK_QUEUED_HOURS=48
+DISK_ALERT_PERCENT=90
+NOTIFY_WEBHOOK_URL=
+EXPIRY_WARNING_DAYS=7
+# Tools that go to the "heavy" queue (comma separated job types); everything else is "fast"
+# HEAVY_TOOLS=taxonomyfinder,annotationPipeline,genomemining,spades,phylogeny,checkm,bigscape,bigslice,panbgc,basalt,gtotree,gatorgc,screen
+# JSON API with per-user keys (needs ACCOUNTS_ENABLED)
+API_ENABLED=True
+
+# CPU cores a single job may use, and how long results are kept (days)
+CORES_PER_JOB=@CORES_PER_JOB@
+MAX_RESULTS_AGE=30
+# Genomes one job may contain in the multi-genome tools (genome screen, DefenseFinder, PADLOC, GenoVi, RRE-Finder)
+MAX_GENOMES_PER_JOB=20
+
+# E-mail: job notifications for users, failure reports for the administrator
+SENDER_EMAIL=@SENDER_EMAIL@
+EMAIL_HOST=localhost
+EMAIL_PORT=25
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+EMAIL_USE_TLS=False

@@ -1,0 +1,56 @@
+{% extends "results.html" %}
+
+{% block results %}
+<style>
+    .panbgc-summary { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 20px; }
+    .panbgc-stat { border: 1px solid #ddd; border-radius: 4px; padding: 8px 16px; background: #fff; min-width: 120px; }
+    .panbgc-stat .value { font-size: 1.6rem; font-weight: bold; color: var(--primary-color, #005aa2); line-height: 1.2; }
+    .panbgc-stat .label { font-size: 0.85rem; color: #555; }
+    .panbgc-heatmap { width: 100%; height: 560px; border: 1px solid #ddd; background: #fff; }
+</style>
+
+<div id="panbgcResults_div">
+    <div style="padding-left: 0; margin-left: 20px; margin-right: 20px;">
+        <h4>PanBGC Ortholog Groups:</h4>
+
+        <div class="panbgc-summary">
+            {% if summary.clusters %}<div class="panbgc-stat"><div class="value">{{ summary.clusters }}</div><div class="label">gene clusters</div></div>{% endif %}
+            <div class="panbgc-stat"><div class="value">{{ summary.groups }}</div><div class="label">ortholog groups</div></div>
+            <div class="panbgc-stat"><div class="value">{{ summary.core }}</div><div class="label">core (in all clusters)</div></div>
+            <div class="panbgc-stat"><div class="value">{{ summary.accessory }}</div><div class="label">accessory</div></div>
+            <div class="panbgc-stat"><div class="value">{{ summary.singleton }}</div><div class="label">singleton (in one cluster)</div></div>
+            {% if summary.gamma %}<div class="panbgc-stat" title="Heaps' law exponent of the pan-gene curve: the higher, the more open the family"><div class="value">{{ summary.gamma }}</div><div class="label">openness (Heaps' &gamma;)</div></div>{% endif %}
+        </div>
+
+        {% if heatmapUrl %}
+        <h5>Presence / absence of ortholog groups</h5>
+        <p>Rows are gene clusters, columns are ortholog groups in consensus order; the bars on top are the groups' median lengths.
+           <a href="{{ heatmapUrl }}" target="_blank" rel="noopener">Open the heatmap PDF in a new tab</a></p>
+        <object class="panbgc-heatmap" data="{{ heatmapUrl }}#toolbar=0" type="application/pdf">
+            <p>Your browser cannot show the PDF here: <a href="{{ heatmapUrl }}" target="_blank" rel="noopener">open the heatmap</a>.</p>
+        </object>
+        {% endif %}
+
+        <h5 style="margin-top: 30px;">Ortholog groups</h5>
+        <div style="max-height: 60vh; overflow: auto;">
+            {{ resultsTable|safe }}
+        </div>
+        <p style="margin-top: 16px;">For the interactive PanBGC visualisation, upload <code>panbgc_visualisation.json</code> from the downloadable results to
+           <a href="https://panbgc-db.cs.uni-tuebingen.de" target="_blank" rel="noopener">PanBGC-DB</a>.</p>
+    </div>
+    <script>
+        $(document).ready(function() {
+            new DataTable('#panbgcResultsTable', {
+                language: { searchPlaceholder: 'Filter results' },
+                layout: {
+                    topStart: 'search',
+                    bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                    topEnd: null,
+                    bottomEnd: 'pageLength'
+                },
+                pageLength: 25
+            });
+        });
+    </script>
+</div>
+{% endblock results %}

@@ -1,0 +1,7 @@
+name: server_plasmidfinder
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - plasmidfinder==3.0.3

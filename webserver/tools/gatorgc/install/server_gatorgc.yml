@@ -1,0 +1,22 @@
+name: server_gatorgc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # Dependency list copied from gator-gc_env.yml in the upstream repo.
+  - python==3.9.16
+  - pandas==1.5.0
+  - numpy==1.24.2
+  - seaborn==0.12.2
+  - matplotlib==3.8.0
+  - scipy==1.10.1
+  - pygenomeviz==0.4.4
+  - biopython==1.81
+  - pip=23.0
+  - hmmer==3.4
+  - diamond==2.2.8
+  - git==2.56.0
+  - pip:
+      # pinned to a commit so builds are reproducible
+      - git+https://github.com/chevrettelab/gator-gc.git@693409d3ce3ad75a59c496237b6651fd1cdfd985

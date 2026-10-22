@@ -1,0 +1,183 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} Snippy {% endblock %}
+{% block tool_description %}
+Snippy finds SNPs between a haploid reference genome and your NGS sequence reads or assembled contigs. <strong>Expected input:</strong> FASTA <code>(.fna, .fasta, .fa)</code> or FASTQ <code>(.fastq, .fq)</code>.
+{% endblock %}
+
+{% block hiddenStatusInputButtonsDiv %} hidden {% endblock %}
+
+{% block accepted_files %} .fasta, .fna, .fa, .fastq, .fq, .fastq.gz, .fq.gz {% endblock %}
+
+{% block text_input_container %}
+{% endblock %}
+
+{% block file_upload_container %}
+        <div class="file-field input-field" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;" id="upload-input-container">
+            <div style="width: 100%; display: flex; gap: 10px; align-items: flex-start;">
+                <div class="file-field input-field" style="margin: 0;">
+                    <div class="btn btn-small" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;">
+                        <span>Upload reads/contigs</span>
+                        <input id="file" type="file" name="file" multiple accept="{% block accepted_files_inner %} .fasta, .fna, .fa, .fastq, .fq, .fastq.gz, .fq.gz {% endblock %}" onchange="showFileName(this)">
+                    </div>
+                </div>
+                <div class="input-field" style="margin: 0;">
+                    <button type="button" class="btn btn-small waves-effect waves-light" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;" id="load-example-btn" onclick="loadExampleData()">Load Example Data</button>
+                </div>
+            </div>
+        </div>
+        <div id="file-name" style="margin: 20px; margin-left: 50px;"></div>
+{% endblock %}
+
+{% block toolEntries %}
+  <div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;">
+    
+    <div style="margin-top: 20px; margin-bottom: 20px;">
+        <label style="font-size: 1rem; color: #26a69a; font-weight: 500;">Reference Genome Source: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Choose to upload a local reference genome file or fetch one using a TaxID from RefSeq">❓</i></label>
+        <p>
+          <label>
+            <input name="reference_source" type="radio" value="upload" id="ref_upload" checked onclick="toggleReferenceSource()" />
+            <span>Upload Reference FASTA</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input name="reference_source" type="radio" value="taxid" id="ref_taxid" onclick="toggleReferenceSource()" />
+            <span>Fetch from RefSeq (TaxID)</span>
+          </label>
+        </p>
+    </div>
+
+    <div style="margin-bottom: 20px;" id="reference-upload-container">
+        <input type="file" name="reference_file" id="reference_file" accept=".fasta,.fna,.fa,.gbk" style="display: none;" onchange="updateRefFilename(this)">
+        <button type="button" class="btn waves-effect waves-light" onclick="document.getElementById('reference_file').click()">Upload Reference FASTA</button>
+        <div id="ref-file-name" style="margin-top: 10px; color: #333;"></div>
+        <input type="hidden" name="ref_filename" id="ref_filename" value="">
+    </div>
+
+    <div class="input-field" style="margin-top: 20px; margin-bottom: 20px; display: none;" id="reference-taxid-container">
+        <label for="reference_taxid" class="active" style="margin-top: 10px">Taxonomy ID: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Taxonomy ID to fetch reference from NCBI RefSeq (e.g. 562 for E. coli)">❓</i></label>
+        <textarea class="materialize-textarea custom-textarea2" name="reference_taxid" id="reference_taxid" placeholder="e.g. 562"></textarea>
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    function updateRefFilename(input) {
+        if (input.files && input.files.length > 0) {
+            var fileName = input.files[0].name.replace(/ /g, '');
+            document.getElementById('ref_filename').value = fileName;
+            var refNameDiv = document.getElementById('ref-file-name');
+            if (refNameDiv) {
+                refNameDiv.textContent = "Selected reference: " + input.files[0].name;
+            }
+        } else {
+            document.getElementById('ref_filename').value = '';
+            var refNameDiv = document.getElementById('ref-file-name');
+            if (refNameDiv) {
+                refNameDiv.textContent = '';
+            }
+        }
+    }
+
+    function toggleReferenceSource() {
+        var uploadRadio = document.getElementById('ref_upload');
+        var uploadContainer = document.getElementById('reference-upload-container');
+        var taxidContainer = document.getElementById('reference-taxid-container');
+        var taxidInput = document.getElementById('reference_taxid');
+        var refFileInput = document.getElementById('reference_file');
+        var refFilenameInput = document.getElementById('ref_filename');
+        var refNameDiv = document.getElementById('ref-file-name');
+        
+        if (uploadRadio.checked) {
+            uploadContainer.style.display = 'block';
+            taxidContainer.style.display = 'none';
+            taxidInput.value = '';
+        } else {
+            uploadContainer.style.display = 'none';
+            taxidContainer.style.display = 'block';
+            if (refFileInput) refFileInput.value = '';
+            if (refFilenameInput) refFilenameInput.value = '';
+            if (refNameDiv) refNameDiv.textContent = '';
+        }
+    }
+
+    function loadToolSpecificExampleData() {
+        const fileNameDiv = document.getElementById('file-name');
+        if (fileNameDiv) {
+            fileNameDiv.textContent = "Selected file: Example Data (Klebsiella pneumoniae NTUH-K2044 genome, reference: K. pneumoniae RefSeq)";
+        }
+
+        // Set Reference Genome Source to TaxID and auto-populate 573 (Klebsiella pneumoniae)
+        const taxidRadio = document.getElementById('ref_taxid');
+        const uploadRadio = document.getElementById('ref_upload');
+        if (taxidRadio) {
+            taxidRadio.checked = true;
+        }
+        if (uploadRadio) {
+            uploadRadio.checked = false;
+        }
+        toggleReferenceSource();
+
+        const taxidInput = document.getElementById('reference_taxid');
+        if (taxidInput) {
+            taxidInput.value = "573";
+            const taxidLabel = document.querySelector('label[for="reference_taxid"]');
+            if (taxidLabel) {
+                taxidLabel.classList.add('active');
+            }
+            if (typeof M !== 'undefined' && M.textareaAutoResize) {
+                M.textareaAutoResize(taxidInput);
+            }
+        }
+    }
+
+    function loadExampleData() {
+        const exampleInput = document.getElementById('use_example_data');
+        if (exampleInput) {
+            exampleInput.value = "true";
+        }
+        const fileInput = document.getElementById('file');
+        if (fileInput) {
+            fileInput.value = "";
+        }
+        const fastaInput = document.getElementById('fasta');
+        if (fastaInput) {
+            fastaInput.value = "";
+        }
+        loadToolSpecificExampleData();
+    }
+
+    function checkFields() {
+        const useExample = document.getElementById("use_example_data");
+        if (useExample && (useExample.value === "true" || useExample.value === "1")) {
+            return true;
+        }
+        
+        var uploadRadio = document.getElementById('ref_upload');
+        if (uploadRadio.checked) {
+            var refFile = document.getElementById('reference_file').value;
+            if (!refFile) {
+                M.toast({html: 'Please upload a reference genome file.'});
+                return false;
+            }
+        } else {
+            var taxid = document.getElementById('reference_taxid').value;
+            if (!taxid || taxid.trim() === '') {
+                M.toast({html: 'Please provide a Taxonomy ID.'});
+                return false;
+            }
+        }
+        return true;
+    }
+</script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+    const loadExampleBtn = document.getElementById('load-example-btn');
+    if (loadExampleBtn) {
+        loadExampleBtn.onclick = loadExampleData;
+    }
+{% endblock %}

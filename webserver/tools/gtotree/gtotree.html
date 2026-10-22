@@ -1,0 +1,81 @@
+{% extends "tool_base.html" %}
+{% load static %}
+
+{% block toolname %} GToTree {% endblock %}
+
+{% block accepted_files %} .fasta, .fa, .fna {% endblock %}
+
+{% block hiddenStatusInputButtonsDiv %} hide {% endblock %}
+
+{% block toolEntries %}
+<div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;">
+    <p>Upload 3 or more genome FASTA files to build a phylogenomic tree from single-copy marker genes.</p>
+    <div class="compact-file-field">
+        <div class="btn btn-small multi-file-btn">
+            <span>Add genomes</span>
+            <input id="genomes" type="file" name="genomes" accept=".fasta,.fa,.fna" multiple>
+        </div>
+    </div>
+    <div id="genomes-list"></div>
+    <div class="input-field" style="margin-top: 30px;">
+        <label for="hmm_set" style="margin-top: -25px;">Single-copy gene set:</label>
+        <br>
+        <select name="hmm_set" id="hmm_set" class="browser-default">
+            <option value="Bacteria">Bacteria</option>
+            <option value="Archaea">Archaea</option>
+            <option value="Bacteria_and_Archaea">Bacteria and Archaea</option>
+            <option value="Universal-Hug-et-al">Universal-Hug-et-al</option>
+            <option value="Actinobacteria">Actinobacteria</option>
+            <option value="Alphaproteobacteria">Alphaproteobacteria</option>
+            <option value="Bacteroidetes">Bacteroidetes</option>
+            <option value="Betaproteobacteria">Betaproteobacteria</option>
+            <option value="Chlamydiae">Chlamydiae</option>
+            <option value="Cyanobacteria">Cyanobacteria</option>
+            <option value="Epsilonproteobacteria">Epsilonproteobacteria</option>
+            <option value="Firmicutes">Firmicutes</option>
+            <option value="Gammaproteobacteria">Gammaproteobacteria</option>
+            <option value="Proteobacteria">Proteobacteria</option>
+            <option value="Tenericutes">Tenericutes</option>
+        </select>
+    </div>
+</div>
+
+<script src="{% static 'js/multi_file_upload.js' %}"></script>
+<script>
+    // Files picked in several rounds are added to the list instead of replacing it
+    initMultiFileUpload({inputId: 'genomes', listId: 'genomes-list', extensions: ['.fasta', '.fa', '.fna'], minFiles: 3, maxFiles: {{ max_files }}});
+</script>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    function checkFields(){
+        var files = document.getElementById('genomes').files;
+        var allowedExtensions = ['.fasta', '.fa', '.fna'];
+        if (files.length + accessionCount() < 3) {
+            alert('Please upload at least 3 genome files.');
+            return false;
+        }
+        for (var i = 0; i < files.length; i++) {
+            var name = files[i].name.toLowerCase();
+            if (!allowedExtensions.some(function (ext) { return name.endsWith(ext); })) {
+                alert('"' + files[i].name + '" has an unsupported extension. Allowed extensions: ' + allowedExtensions.join(', ') + '.');
+                return false;
+            }
+        }
+        return true;
+    }
+</script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+    document.getElementById('fasta-input-container').hidden = true;
+    document.getElementById('upload-input-container').hidden = true;
+{% endblock %}
+
+{% block exampleDataSection %}
+<div class="col s12 m8 offset-m2" style="margin: 40px 50px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
+    <a href="{% url 'baclab:download_example_data' 'gtotree' %}" class="btn btn-small">Download Example Data</a>
+    <a href="{% url 'baclab:example_results' 'gtotree' %}" class="btn btn-small">View Example Results</a>
+</div>
+{% endblock %}

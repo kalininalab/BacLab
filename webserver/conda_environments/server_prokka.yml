@@ -1,0 +1,11 @@
+name: server_prokka
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+  - r
+dependencies:
+  - prokka==1.15.6
+  # Override version from prokka dependencies due to bug breaking processing
+  # of files with '>' as recstart (e.g. FASTA) in 20260422
+  - parallel==20260122

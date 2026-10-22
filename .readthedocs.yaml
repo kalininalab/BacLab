@@ -1,0 +1,18 @@
+# Read the Docs build of the documentation in docs/ (https://docs.readthedocs.io/en/stable/config-file/v2.html)
+version: 2
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+  jobs:
+    pre_build:
+      # puts the static demonstrations next to the pages (see docs/fetch_demos.py and docs/demos.md)
+      - python docs/fetch_demos.py
+
+sphinx:
+  configuration: docs/conf.py
+
+python:
+  install:
+    - requirements: docs/requirements.txt

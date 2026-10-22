@@ -1,0 +1,192 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} BLAST {% endblock %}
+{% block tool_description %}
+Search for sequence similarities against local or remote databases. <strong>Expected input:</strong> Nucleotide or protein sequences in FASTA format <code>(.fasta, .fna, .faa)</code>. 
+<br><em>The "Load Example Data" option provides a nucleotide sequence (16S rRNA gene). Please use it with Blastn, tBlastn, or tBlastx.</em>
+{% endblock %}
+
+
+{% block accepted_files %} .fasta, .fna, .faa {% endblock %}
+
+{% block toolEntries %}
+  <div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 20px; margin-right: 50px;">
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="blast-type-container">
+        <label for="blast_type" style="margin-top: -10px;">Blast type: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Select the type of BLAST search (e.g. blastn for nucleotide vs nucleotide)">❓</i></label>
+        <br>
+        <br>
+        <select onchange="updateDatabaseUI();" name="blast_type" id="blast_type">
+            <option value="blastn">Blastn (Nucleotide - Nucleotide BLAST)</option>
+            <option value="blastp">Blastp (Protein - Protein BLAST)</option>
+            <option value="tblastn">tBlastn (Protein Query-Translated Subject BLAST)</option>
+            <option value="blastx">Blastn (Translated Query-Protein Subject BLAST)</option>
+            <option value="tblastx">tBlastx (Translated Query-Translated Subject BLAST)</option>
+        </select>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="blast-database-container">
+        <label for="blastdb" style="margin-top: -10px;">Blast database: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Select the target database to search against">❓</i></label>
+        <br>
+        <br>
+        <select onchange="updateDatabaseUI()" name="blastdb" id="blastdb">
+            {% for option in database_options %}
+                <option value="{{ option.value }}" {% if option.disabled %}disabled{% endif %} {% if forloop.first %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+        </select>
+
+
+
+    </div>
+
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="blast-evalue-container">
+        <label for="evalue" style="margin-top: 10px">Expectation value cutoff: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Number of hits expected by chance (lower is more significant)">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="evalue" id="evalue" placeholder="0.001" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>0.0001</textarea>
+    </div>
+
+    <div class="col s12 m8 offset-m2" style="margin: 20px;">
+        <input onchange="updateCoOccurrenceStatus();" type="checkbox" name="co-occurence" id="co-occurence">
+        <label for="co-occurence" style="margin-left:20px"> Check co-occurence genes <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Check if the queried genes appear near each other in the target genome">❓</i></label><br>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="co-occurence_min_pident-container">
+        <label for="min_pident_cooccurence" style="margin-top: 10px">Minimum percentage identity for co-occurence genes: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Minimum sequence identity required for co-occurring hits">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="min_pident_cooccurence" id="min_pident_cooccurence" placeholder="40" pattern="\d*\.?\d+">40</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="co-occurence_min_qcovs-container">
+        <label for="min_qcovs_cooccurence" style="margin-top: 10px">Minimum query coverage for co-occurence genes: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Minimum percentage of the query sequence that must be covered">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="min_qcovs_cooccurence" id="min_qcovs_cooccurence" placeholder="30" pattern="\d*\.?\d+">30</textarea>
+    </div>
+
+  </div>
+
+  <script>
+    // Build database configuration from options
+    const database_config = {
+    {% for option in database_options %}
+        "{{ option.value }}": {
+        "db_type": "{{ option.db_type }}", // Updated key
+        "show_warning": {{ option.show_warning|lower }}
+        },
+    {% endfor %}
+    };
+
+    function updateCoOccurrenceStatus() {
+        const fasta_input = document.getElementById('fasta').value;
+        const sequence_count = (fasta_input.match(/>/g) || []).length;
+
+        if (sequence_count <= 1) {
+            alert("You can only activate co-occurence option if your input is more than one fasta sequences");
+            document.getElementById('co-occurence').checked = false;
+        }
+    }
+
+    function updateDatabaseUI() {
+        const blast_type_select = document.getElementById("blast_type");
+        const database_select = document.getElementById("blastdb");
+        const warning_div = document.getElementById("db-warning-message");
+
+        const selectedBlastType = blast_type_select.value;
+        const selectedDb = database_select.value;
+
+        // 1. Handle Filtering (Nucleotide vs Protein)
+        const type_map = {
+            'blastn': 'nucl', 'tblastn': 'nucl', 'tblastx': 'nucl',
+            'blastp': 'prot', 'blastx': 'prot'
+        };
+        const requiredType = type_map[selectedBlastType];
+
+        for (let i = 0; i < database_select.options.length; i++) {
+            const option = database_select.options[i];
+            const dbInfo = database_config[option.value];
+
+            if (dbInfo && dbInfo.db_type === requiredType) {
+                option.disabled = false;
+            } else {
+                option.disabled = true;
+                // If the currently selected option is now disabled, we'll need to move it later
+            }
+        }
+
+        // 2. Ensure a valid database is selected if the current one was disabled
+        if (database_select.selectedOptions[0]?.disabled) {
+            for (let i = 0; i < database_select.options.length; i++) {
+                if (!database_select.options[i].disabled) {
+                    database_select.value = database_select.options[i].value;
+                    break;
+                }
+            }
+        }
+
+        // 3. Handle the Warning Message Visibility
+        // We check the NEWLY selected database (after step 2)
+        const currentDbValue = database_select.value;
+        if (database_config[currentDbValue]?.show_warning) {
+            warning_div.style.display = "block";
+        } else {
+            warning_div.style.display = "none";
+        }
+    }
+
+    // Run this function on page load to set the initial state correctly
+    document.addEventListener("DOMContentLoaded", updateDatabaseUI);
+  </script>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+
+<script>
+
+    function checkFields() {
+        const useExample = document.getElementById("use_example_data");
+        if (useExample && (useExample.value === "true" || useExample.value === "1")) {
+            return true;
+        }
+
+        const evalue = document.getElementById('evalue').value;
+        if (evalue < 0.0001 || evalue > 10){
+            alert("Expectation value must be between 0.0001 and 10");
+            return false;
+        }
+        
+        const database = document.getElementById('blastdb').value;
+        if (database == ''){
+            alert("Please select a database, if you have used back arrow, please refresh the page");
+            return false;
+        }
+
+        if (document.getElementById('co-occurence').checked){
+            const min_pident = document.getElementById('min_pident_cooccurence').value;
+            const min_qcovs = document.getElementById('min_qcovs_cooccurence').value;
+
+            if (min_pident < 0 || min_pident > 100){
+                alert("Minimum percentage identity for co-occurence genes must be between 0 and 100");
+                return false;
+            }
+
+            if (min_qcovs < 0 || min_qcovs > 100){
+                alert("Minimum query coverage for co-occurence genes must be between 0 and 100");
+                return false;
+            }
+
+            const fasta_input = document.getElementById('fasta').value;
+            // check if there is more than one sequence in the fasta input, if it does, activate the co-occuring gene blast option
+            const sequence_count = (fasta_input.match(/>/g) || []).length;
+            if (sequence_count > 1){
+                pass
+            } else {
+                alert("You can only activate co-occurence option if your input is more than one fasta sequences")
+                return false;
+            }
+        }
+
+        return true;
+    }
+</script>
+    
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+
+{% endblock %}

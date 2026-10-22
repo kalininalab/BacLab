@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main">
+    <p>Upload a ZIP archive containing genome FASTA files (<code>.fasta</code>, <code>.fa</code>, or <code>.fna</code>).
+    Each file's name (without extension) will be used as the strain ID. Every valid strain will be created
+    and queued through the selected pipelines individually.</p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <fieldset class="module aligned">
+            {% for field in form %}
+            <div class="form-row">
+                {{ field.errors }}
+                {{ field.label_tag }}
+                {{ field }}
+                {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </fieldset>
+        <div class="submit-row">
+            <input type="submit" value="Upload" class="default">
+            <a href="../" class="button cancel-link">Back to list</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

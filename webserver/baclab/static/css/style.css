@@ -1,0 +1,415 @@
+/* nav bar */
+body {
+    color: var(--text-color) !important;
+}
+
+
+#logo {
+    display: flex;
+    align-items: center;
+}
+
+#logo i {
+    margin: 0 15px;
+    font-size:  2.3rem;
+}
+
+nav li a {
+    padding: 0 2rem !important;
+    font-size: 1.3rem !important;
+}
+
+h1 {
+    margin-bottom: 4rem !important;
+}
+
+.btn, .btn-small {
+    text-transform: unset !important;
+}
+
+
+.input-field {
+    margin-top: 1.5rem !important;
+    margin-bottom: 1rem !important;
+}
+
+
+#submit-btn {
+    margin-top: 2.5rem !important;
+}
+
+
+#viewport {
+    width: 40vw;
+    height: 60vh;
+    background: var(--bg-color) !important;
+}
+
+
+#error-msg {
+    color: red;
+    font-size: 1.2rem;
+}
+
+#pos-box {
+    height: 100%;
+}
+
+.additional {
+    display: none !important;
+}
+
+
+/* submit */
+
+#filter-btn {
+    margin-bottom: 2.5rem;
+}
+
+#radio-title {
+    font-size: 1.2rem;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;
+}
+
+#radio-field {
+    margin-top: 0 !important;
+}
+
+.codebox {
+        /* Below are styles for the codebox (not the code itself) */
+        border:1px solid black;
+        background-color:#EEEEFF;
+        width:100%;
+        overflow:auto;    
+        padding:10px;
+    }
+.codebox code {
+    /* Styles in here affect the text of the codebox */
+    font-size:0.9em;
+    /* You could also put all sorts of styling here, like different font, color, underline, etc. for the code. */
+}
+
+
+#info-table {
+    table-layout: fixed;
+    word-wrap: break-word;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: var(--primary-color) !important;
+    min-width: 250x;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown-content li:hover,
+.dropdown-content li.active {
+    background-color: var(--secondary-color) !important;
+}
+
+.center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.btn {
+    background-color: var(--button-color) !important;
+}
+.btn:hover, .btn:focus, .btn-small:hover, .btn-small:focus {
+    background-color: var(--secondary-color, var(--button-color)) !important;
+}
+
+/* input[type=submit]/[type=button] (e.g. the tool submission page's #submitButton) get
+   -webkit-appearance: button from Materialize's normalize reset, which makes WebKit/Safari
+   paint native button chrome and ignore the background-color above - reset appearance so
+   the theme color actually shows. */
+input[type="submit"].btn,
+input[type="button"].btn {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: none;
+}
+
+#input-list li {
+    margin-left: 1em;
+    padding-left: 1em;
+    list-style-type: disc !important;
+}
+
+.bld {
+    font-weight: 600;
+}
+
+.true-list {
+    padding-left: revert !important;
+}
+
+.true-list li {
+    list-style-type: disc !important;
+}
+
+.mut-ex {
+    font-variant: small-caps;
+}
+
+.collapsible-header .mut-ex {
+    margin: 0 0.4rem;
+}
+
+.collapsible-body {
+    text-align: justify;
+
+}
+
+.custom-header {
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+#resultsTable {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.alert {
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.alert-danger {
+    color: white;
+    background-color: #f44336;
+}
+
+.dataTables_filter {
+    text-align: left !important;
+}
+
+.spaced-list {
+    line-height: 1.8;
+}
+
+
+.custom-label {
+    font-size: 16px;
+    color: var(--primary-color) !important; 
+    font-weight: bold; 
+    margin-bottom: 10px; 
+    display: block; 
+}
+
+.hidden {
+    display: none;
+}
+
+.custom-textarea {
+    height: 200px !important;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    overflow-y: scroll !important; 
+    resize: vertical !important;
+}
+
+.custom-textarea2 {
+    height: 50px !important;
+    margin-top: 30px;
+    margin-bottom: 10px;
+    overflow-y: scroll !important; 
+    resize: vertical !important;
+}
+
+#cy {
+    width: calc(100vw - 26rem);
+    margin-left: 25rem;
+    margin-right: 1rem;
+    height: calc(calc(100vh - 6rem) - 2.4rem);
+    display: block;
+    top: 2.4rem
+}
+#sidebar {
+    width: 24rem;
+    left: 0;
+    top: 61px;
+    height: calc(100vh - 61px);
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 1rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-color) !important;
+    background-color: #eee;
+}
+#graph-export-png-btn {
+    position: fixed;
+    left: 24.5rem;
+    top: calc(61px + 0.5rem);
+    z-index: 99;
+    width: 8rem;
+    height: 2.4rem;
+}
+#graph-export-json-btn {
+    position: fixed;
+    left: 33rem;
+    top: calc(61px + 0.5rem);
+    z-index: 99;
+    width: 8rem;
+    height: 2.4rem;
+}
+.graph-select {
+    display: inline-block;
+    width: 45%;
+}
+.graph-label {
+    width: 60%;
+    text-align: right;
+    padding-right: 1rem;
+    vertical-align: middle;
+}
+.graph-color-picker {
+    width:35%;
+    vertical-align: middle;
+}
+.graph-option-div {
+    margin-top: 0.5rem;
+}
+.id-graph-select {
+    width: 55%;
+}
+.id-graph-select > button {
+    text-align: left !important;
+}
+
+.highlight {
+    background-color: var(--secondary-color) !important; /* Highlight color */
+}
+
+.container {
+    max-width: 1024px; /* Adjust the max-width as needed */
+    margin: 0 auto; /* Center the container */
+    padding: 20px; /* Add some padding */
+}
+
+#cytoscape {
+    width: 600px;
+    height: 600px;
+    border: 2px solid #000; /* Add border to the cytoscape div */
+    margin: 20px auto; /* Center the div horizontally */
+}
+
+.dropdown-download-content {
+    text-align: left !important;
+    background-color: var(--primary-color) !important;
+    
+}
+
+.dropdown-download-content:hover {
+    background-color: var(--secondary-color) !important;
+}
+
+@media screen and (max-width: 768px) {
+    #sidebar {
+        height: auto; /* Allow height to expand naturally */
+        margin-top: 10px; /* Reduce margin for smaller screens */
+    }
+    .btn {
+        min-width: 100%; /* Stack buttons vertically */
+        margin-top: 0.5em;
+    }
+}
+
+.button-container, .example-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    gap: 10px; /* Add some space between the buttons */
+}
+
+@media only screen and (max-width: 600px) {
+    .button-container, .example-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .btn {
+        width: 100%;
+    }
+}
+
+.indented {
+    padding-left: 20px;
+}
+
+.pagetitle {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: var(--primary-color) !important;
+}
+/* Accumulating multi-file picker (js/multi_file_upload.js) */
+.multi-file-table { width: 100%; max-width: 46rem; table-layout: fixed; margin: 0.75rem 0 0.5rem; border: 1px solid #e0e0e0; border-collapse: collapse; }
+.multi-file-table th, .multi-file-table td { padding: 0.6rem 1.5rem; text-align: left; vertical-align: middle; border-bottom: 1px solid #e0e0e0; }
+.multi-file-table thead th { background: #f5f5f5; color: #555; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+.multi-file-table tfoot td { background: #f5f5f5; color: #555; font-size: 0.9rem; border-bottom: none; }
+.multi-file-table .multi-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.multi-file-table .multi-file-size { width: 7rem; text-align: right; color: #666; white-space: nowrap; }
+.multi-file-table thead .multi-file-size { color: #555; }
+.multi-file-table th:last-child, .multi-file-table .multi-file-action { width: 10.5rem; text-align: right; }
+.multi-file-table .multi-file-action .btn { width: 100%; padding: 0 0.5rem; }
+.multi-file-notice { color: #b26a00; font-size: 0.9rem; margin-top: 0.6rem; max-width: 46rem; }
+.multi-file-btn { position: relative; overflow: hidden; }
+.multi-file-btn input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+
+/* Checkboxes: the bundled Materialize shows the browser's own checkbox (opacity 100), which is what the older tool pages rely on.
+   Where a page uses Materialize's <label><input><span>text</span></label> markup, its drawn box would appear a second time next to
+   the native one - hide the drawn box and let the native checkbox do the work. */
+[type="checkbox"] + span:not(.lever):before,
+[type="checkbox"] + span:not(.lever):after,
+[type="checkbox"]:checked + span:not(.lever):before { display: none !important; }
+label > [type="checkbox"] { position: static !important; width: 16px; height: 16px; margin: 0 8px 0 0; vertical-align: middle; accent-color: var(--primary-color, #005aa2); cursor: pointer; }
+label > [type="checkbox"] + span:not(.lever) { padding-left: 0 !important; height: auto; line-height: 1.4; display: inline; vertical-align: middle; cursor: pointer; }
+
+/* Theme colours everywhere: the bundled Materialize has the default blue (#005aa2) built in for nav, labels and dropdowns, and DataTables'
+   page selector is a <nav> that inherited that blue as a block. Everything below follows the colours of the administrator's theme. */
+nav { background-color: var(--primary-color, #005aa2); }
+label, .input-field > label, .input-field > label.active { color: var(--primary-color, #005aa2) !important; }
+.dropdown-content { background-color: var(--primary-color, #005aa2) !important; }
+.dropdown-content li:hover, .dropdown-content li.active { background-color: var(--secondary-color, #008cff) !important; }
+
+body .dt-container .dt-paging nav, body .dt-paging nav { background: transparent !important; color: var(--button-color, #005aa2) !important; box-shadow: none !important; height: auto !important; line-height: 1.4 !important; width: auto !important; }
+body .dt-container .dt-paging nav .dt-paging-button {
+    background: #fff !important; color: var(--button-color, #005aa2) !important; border: 1px solid var(--button-color, #005aa2) !important;
+    border-radius: 4px; margin: 0 2px; padding: 3px 11px; cursor: pointer; box-shadow: none !important;
+}
+body .dt-container .dt-paging nav .dt-paging-button.current { background: var(--button-color, #005aa2) !important; color: #fff !important; }
+body .dt-container .dt-paging nav .dt-paging-button:hover:not(.disabled):not(.current) {
+    background: var(--secondary-color, #008cff) !important; color: #fff !important; border-color: var(--secondary-color, #008cff) !important;
+}
+body .dt-container .dt-paging nav .dt-paging-button.disabled { opacity: 0.45; cursor: default; }
+.dt-container .dt-length label, .dt-container .dt-search label, .dt-container .dt-info { color: var(--primary-color, #005aa2); }
+
+/* Citation boxes: the same left edge as the other elements of the page (the footer adds no padding of its own; on results pages the content
+   starts 20px in, the tables 40px) */
+.results-cites .citation-box { margin-left: 20px !important; }
+footer .citation-box { margin-left: 50px !important; margin-right: 50px !important; }
+
+/* The top bar has more entries when accounts are on (my jobs, logout): tighten it on medium screens so it does not run into the logo */
+@media (max-width: 1400px) {
+    nav ul a, nav ul li button { padding: 0 11px !important; font-size: 0.95rem !important; }
+}
+@media (max-width: 1150px) {
+    nav ul a, nav ul li button { padding: 0 7px !important; font-size: 0.88rem !important; }
+}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{% endblock %}
+
+{% block content %}
+
+{% if error %}
+
+
+<center>
+    <h4>Given input contains not allowed characters, please input proper fasta input.</h4> 
+</center>
+
+{% else %}
+
+<center>
+    <h4>Your job has been submitted successfully.</h4>
+    <h4>Please save your ID to check results later.</h4>
+    <br>
+    <h4>   Your job ID: {{ run_key }}</h4>
+    <br>
+    <h4>   You can save the link for check back your results later: <a href="{{ website_link }}/results/?job_id={{ run_key }}">{{ website_link }}/results/?job_id={{ run_key }}</a></h4>
+    </br>
+    <h5 id="countdown">You will be redirected to results page in 10 seconds</h5>
+
+    <script>
+        // Function to get the CSRF token from the cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                let cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    let cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function returnCSRFToken() {
+            return getCookie('csrftoken');
+        }
+        
+        let timeLeft = 10;
+        const countdownElement = document.getElementById('countdown');
+        let jobId = '{{ run_key }}';  // Assign the value of run_key to jobId
+        
+        const countdownInterval = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = `You will be redirected to results page in ${timeLeft} seconds`;
+        
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+        
+                // Get the CSRF token
+                let csrfToken = getCookie('csrftoken');
+        
+                // Create a form
+                let form = document.createElement('form');
+                form.method = 'GET';
+                form.action = "{% url 'baclab:results' %}";
+        
+                // Create an input for the CSRF token
+                let csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+        
+                // Create an input for the job ID
+                let jobIdInput = document.createElement('input');
+                jobIdInput.type = 'hidden';
+                jobIdInput.name = 'job_id';
+                jobIdInput.value = jobId;
+        
+                // Add the inputs to the form
+                form.appendChild(csrfInput);
+                form.appendChild(jobIdInput);
+        
+                // Add the form to the body
+                document.body.appendChild(form);
+        
+                // Submit the form
+                form.submit();
+            }
+        }, 1000);
+        </script>
+
+</center>
+
+{% endif %}
+
+{% endblock content %}

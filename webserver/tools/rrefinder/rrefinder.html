@@ -1,0 +1,68 @@
+{% extends "tool_base.html" %}
+{% load static %}
+
+{% block toolname %} RRE-Finder {% endblock %}
+
+{% block accepted_files %} .faa, .fasta, .fa, .gbk, .gb, .gbff {% endblock %}
+
+{% block hiddenStatusInputButtonsDiv %} hide {% endblock %}
+
+{% block toolEntries %}
+<div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;">
+    <p>Upload one or more protein FASTA files (.faa, .fasta, .fa) or GenBank files (.gbk, .gb, .gbff) - not mixed - to find RiPP Recognition Elements (RREs) in their proteins.</p>
+    <div class="compact-file-field">
+        <div class="btn btn-small multi-file-btn">
+            <span>Add files</span>
+            <input id="genomes" type="file" name="genomes" accept=".faa,.fasta,.fa,.gbk,.gb,.gbff" multiple>
+        </div>
+    </div>
+    <div id="genomes-list"></div>
+    <div style="margin-top: 30px;">
+        <label for="mode">Mode:</label>
+        <select name="mode" id="mode" class="browser-default">
+            <option value="both" selected>Both (precision + exploratory)</option>
+            <option value="precision">Precision (fast, RREfam HMMs only)</option>
+            <option value="exploratory">Exploratory (HHsearch-style, finds more distant RREs)</option>
+        </select>
+    </div>
+</div>
+
+<script src="{% static 'js/multi_file_upload.js' %}"></script>
+<script>
+    // Files picked in several rounds are added to the list instead of replacing it
+    initMultiFileUpload({inputId: 'genomes', listId: 'genomes-list', extensions: ['.faa', '.fasta', '.fa', '.gbk', '.gb', '.gbff'], minFiles: 1, maxFiles: {{ max_files }}});
+</script>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    function checkFields(){
+        var files = document.getElementById('genomes').files;
+        var allowedExtensions = ['.faa', '.fasta', '.fa', '.gbk', '.gb', '.gbff'];
+        if (files.length + accessionCount() < 1) {
+            alert('Please upload at least 1 file(s).');
+            return false;
+        }
+        for (var i = 0; i < files.length; i++) {
+            var name = files[i].name.toLowerCase();
+            if (!allowedExtensions.some(function (ext) { return name.endsWith(ext); })) {
+                alert('"' + files[i].name + '" has an unsupported extension. Allowed extensions: ' + allowedExtensions.join(', ') + '.');
+                return false;
+            }
+        }
+        return true;
+    }
+</script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+    document.getElementById('fasta-input-container').hidden = true;
+    document.getElementById('upload-input-container').hidden = true;
+{% endblock %}
+
+{% block exampleDataSection %}
+<div class="col s12 m8 offset-m2" style="margin: 40px 50px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
+    <a href="{% url 'baclab:download_example_data' 'rrefinder' %}" class="btn btn-small">Download Example Data</a>
+    <a href="{% url 'baclab:example_results' 'rrefinder' %}" class="btn btn-small">View Example Results</a>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+name: server_padloc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - padloc==2.0.0

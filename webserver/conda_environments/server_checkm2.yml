@@ -1,0 +1,8 @@
+name: server_checkm2
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - "python<3.9"
+  - checkm2==1.0.2

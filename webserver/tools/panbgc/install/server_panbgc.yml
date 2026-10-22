@@ -1,0 +1,22 @@
+name: server_panbgc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # PanBGC-DB's README asks for zol 1.5.9 specifically (its -r orthogroup option); ASTRAL-Pro3 ships
+  # in the bioconda "aster" package; openpyxl/tqdm are the pipeline scripts' own pip requirements.
+  - zol==1.5.9
+  - aster==1.25
+  - openpyxl==3.1.5
+  - tqdm==4.70.0
+  # zol imports pkg_resources, which setuptools >= 81 no longer ships
+  - setuptools==80.10.2
+  # setup_annotation_dbs.py downloads with axel
+  - axel==2.17.13
+  - git==2.56.0
+  # zol 1.5.9 uses TopHits.query (added in pyhmmer 0.11) and calls .decode() on names (str from
+  # 0.12): only 0.11.x works - "RuntimeError: Problem running pyhmmer!" otherwise.
+  - pyhmmer==0.11.4
+  # the PanBGC scripts use SeqFeature.strand, removed in Biopython 1.82
+  - biopython==1.81

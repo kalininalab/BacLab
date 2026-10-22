@@ -1,0 +1,16 @@
+{% extends "results.html" %}
+
+{% block results %}
+<div style="padding-left: 0; margin-left: 20px;">
+    <h4>Result files:</h4>
+    <p>Everything is in the download (button above). The files:</p>
+    <table class="striped" style="max-width: 46rem;">
+        <thead><tr><th>File</th><th style="text-align: right;">Size</th></tr></thead>
+        <tbody>
+            {% for file in files %}
+            <tr><td>{{ file.name }}</td><td style="text-align: right;">{{ file.size|filesizeformat }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock results %}

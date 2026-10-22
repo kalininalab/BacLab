@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""baclab-client - use a BacLab server from the command line or a pipeline (standard library only, Python 3.6+).
+
+    export BACLAB_URL=https://baclab.example.org
+    export BACLAB_TOKEN=lm_...            # create it on the site: my jobs -> API keys
+
+    baclab-client tools
+    baclab-client submit padloc g1.fasta g2.fasta [--set key=value ...] [--accession GCF_...] [--private] [--wait] [--download results.zip]
+    baclab-client status <job id>
+    baclab-client jobs
+    baclab-client download <job id> results.zip
+"""
+import argparse
+import json
+import mimetypes
+import os
+import sys
+import time
+import urllib.error
+import urllib.request
+import uuid
+
+
+def request(method, path, data=None, headers=None, raw=False):
+    base = os.environ.get('BACLAB_URL', '').rstrip('/')
+    token = os.environ.get('BACLAB_TOKEN', '')
+    if not base or not token:
+        sys.exit('Set BACLAB_URL and BACLAB_TOKEN (create a key on the site: my jobs -> API keys).')
+    req = urllib.request.Request(base + path, data=data, method=method, headers=dict({'Authorization': f'Bearer {token}'}, **(headers or {})))
+    try:
+        with urllib.request.urlopen(req, timeout=600) as response:
+            body = response.read()
+            return body if raw else json.loads(body.decode())
+    except urllib.error.HTTPError as error:
+        try:
+            message = json.loads(error.read().decode()).get('error', error.reason)
+        except Exception:
+            message = error.reason
+        sys.exit(f'Server said {error.code}: {message}')
+
+
+def multipart(fields, files):
+    boundary = uuid.uuid4().hex
+    parts = []
+    for name, value in fields:
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
+    for name, path in files:
+        content_type = mimetypes.guess_type(path)[0] or 'application/octet-stream'
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"; filename="{os.path.basename(path)}"\r\n'
+                     f'Content-Type: {content_type}\r\n\r\n'.encode() + open(path, 'rb').read() + b'\r\n')
+    parts.append(f'--{boundary}--\r\n'.encode())
+    return b''.join(parts), f'multipart/form-data; boundary={boundary}'
+
+
+def wait_for(job_id, interval=10):
+    while True:
+        job = request('GET', f'/api/v1/jobs/{job_id}/')
+        print(f"{job_id}: {job['status']}", file=sys.stderr)
+        if job['status'] in ('finished', 'failed'):
+            return job
+        time.sleep(interval)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest='command')
+    sub.required = True
+    sub.add_parser('tools')
+    sub.add_parser('jobs')
+    p = sub.add_parser('submit')
+    p.add_argument('tool')
+    p.add_argument('files', nargs='*')
+    p.add_argument('--set', action='append', default=[], metavar='KEY=VALUE', help='a setting of the tool (repeatable)')
+    p.add_argument('--accession', action='append', default=[], help='NCBI assembly accession to fetch (repeatable)')
+    p.add_argument('--email')
+    p.add_argument('--private', action='store_true')
+    p.add_argument('--wait', action='store_true', help='wait until the job is done')
+    p.add_argument('--download', metavar='FILE', help='save the results zip here (implies --wait)')
+    p = sub.add_parser('status')
+    p.add_argument('job_id')
+    p = sub.add_parser('download')
+    p.add_argument('job_id')
+    p.add_argument('file')
+    args = parser.parse_args()
+
+    if args.command == 'tools':
+        for tool in request('GET', '/api/v1/tools/')['tools']:
+            print(f"{tool['name']:<16} {tool['title']}  ({tool['min_files']}-{tool['max_files']} files: {', '.join(tool['extensions'])})")
+    elif args.command == 'jobs':
+        for job in request('GET', '/api/v1/jobs/')['jobs']:
+            print(f"{job['job_id']}  {job['status']:<9} {(job.get('summary') or {}).get('headline', '')}")
+    elif args.command == 'status':
+        print(json.dumps(request('GET', f'/api/v1/jobs/{args.job_id}/'), indent=2))
+    elif args.command == 'download':
+        with open(args.file, 'wb') as handle:
+            handle.write(request('GET', f'/api/v1/jobs/{args.job_id}/download/', raw=True))
+        print(f'Saved {args.file}')
+    elif args.command == 'submit':
+        fields = [tuple(item.split('=', 1)) for item in args.set]
+        if args.accession:
+            fields.append(('accessions', '\n'.join(args.accession)))
+        if args.email:
+            fields.append(('email', args.email))
+        if args.private:
+            fields.append(('private', 'on'))
+        body, content_type = multipart(fields, [('genomes', path) for path in args.files])
+        job = request('POST', f'/api/v1/jobs/{args.tool}/submit/', data=body, headers={'Content-Type': content_type})
+        print(job['job_id'])
+        if args.wait or args.download:
+            job = wait_for(job['job_id'])
+            if job['status'] != 'finished':
+                sys.exit(f"Job {job['job_id']} failed: {job.get('error')}")
+            if args.download:
+                with open(args.download, 'wb') as handle:
+                    handle.write(request('GET', f"/api/v1/jobs/{job['job_id']}/download/", raw=True))
+                print(f'Saved {args.download}')
+
+
+if __name__ == '__main__':
+    main()

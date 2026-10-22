@@ -1,0 +1,127 @@
+{% extends "results.html" %}
+{% load static %}
+
+{% block results_css %}
+<script type="text/javascript" src="{% static 'js/d3.v3.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/phylotree.css' %}">
+<script type="text/javascript" src="{% static 'js/phylotree.js' %}"></script>
+
+<style>
+    #tree_display { width: 100%; min-height: 420px; }
+    .tree-selection-brush .extent { fill-opacity: .05; stroke: #fff; }
+    .node { font-size: 11px; cursor: pointer; }
+    .branch { fill: none; stroke: #999; stroke-width: 2px; }
+    .node-label { fill: #333; font-weight: bold; }
+
+    .gt-summary { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 20px; }
+    .gt-stat { border: 1px solid #ddd; border-radius: 4px; padding: 8px 16px; background: #fff; min-width: 120px; }
+    .gt-stat .value { font-size: 1.6rem; font-weight: bold; color: var(--primary-color, #005aa2); line-height: 1.2; }
+    .gt-stat .label { font-size: 0.85rem; color: #555; }
+
+    .gt-heatmap-wrap { overflow: auto; max-height: 70vh; border: 1px solid #ddd; background: #fff; }
+    table.gt-heatmap { border-collapse: separate; border-spacing: 1px; font-size: 11px; }
+    table.gt-heatmap th { font-weight: normal; padding: 0 2px; background: #fff; }
+    table.gt-heatmap thead th { height: 130px; vertical-align: bottom; position: sticky; top: 0; z-index: 2; }
+    table.gt-heatmap thead th span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+    table.gt-heatmap tbody th { text-align: right; white-space: nowrap; position: sticky; left: 0; z-index: 1; padding-right: 8px; }
+    table.gt-heatmap td { width: 12px; min-width: 12px; height: 14px; padding: 0; }
+    td.single { background: #8aa0c4; }
+    td.multi { background: #e8a33d; }
+    td.missing { background: #f3c6c6; }
+    .gt-legend span { display: inline-block; width: 12px; height: 12px; margin: 0 4px 0 12px; vertical-align: middle; }
+    tr.not-in-tree td { color: #b00020; }
+</style>
+{% endblock %}
+
+{% block results %}
+<div id="gtotreeResults_div">
+    <div style="padding-left: 0; margin-left: 20px; margin-right: 20px;">
+        <h4>GToTree Phylogenomic Tree:</h4>
+
+        <div class="gt-summary">
+            <div class="gt-stat"><div class="value">{{ stats.genomes }}</div><div class="label">genomes</div></div>
+            {% if stats.in_tree != None %}<div class="gt-stat"><div class="value">{{ stats.in_tree }}</div><div class="label">in the tree</div></div>{% endif %}
+            <div class="gt-stat"><div class="value">{{ stats.markers }}</div><div class="label">marker genes in the set</div></div>
+            {% if stats.median_completeness %}<div class="gt-stat"><div class="value">{{ stats.median_completeness }}%</div><div class="label">median completeness</div></div>{% endif %}
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h5>Tree</h5>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="changeLayout('linear')">Linear</button>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="changeLayout('radial')">Radial</button>
+            </div>
+        </div>
+        <div style="overflow: auto; border: 1px solid var(--primary-color, #005aa2); background: #f9f9f9;">
+            <svg id="tree_display"></svg>
+        </div>
+
+        {% if summaryTable %}
+        <h5 style="margin-top: 36px;">Genomes</h5>
+        <p>Completeness and redundancy are estimated from the single-copy marker genes found in each genome. Genomes with too few markers are left out of the tree.</p>
+        <div style="max-height: 50vh; overflow: auto;">
+            {{ summaryTable|safe }}
+        </div>
+        {% endif %}
+
+        {% if heatmapRows %}
+        <h5 style="margin-top: 36px;">Marker genes per genome</h5>
+        <p class="gt-legend">Each column is a single-copy marker gene.
+            <span style="background:#8aa0c4"></span>one copy
+            <span style="background:#e8a33d"></span>duplicated
+            <span style="background:#f3c6c6"></span>missing</p>
+        <div class="gt-heatmap-wrap">
+            <table class="gt-heatmap">
+                <thead>
+                    <tr>
+                        <th></th>
+                        {% for gene in genes %}<th><span>{{ gene }}</span></th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in heatmapRows %}
+                    <tr>
+                        <th title="{{ row.missing }} missing, {{ row.multi }} duplicated">{{ row.genome }}</th>
+                        {% for cell in row.cells %}<td class="{{ cell.cls }}" title="{{ row.genome }} - {{ cell.gene }}: {{ cell.count }} cop{{ cell.count|pluralize:'y,ies' }}"></td>{% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    var newick = `{{ phylogeneticTreeData|safe }}`;
+    var tree = d3.layout.phylotree()
+        .svg(d3.select("#tree_display"))
+        .options({'selectable': true, 'collapsible': true, 'transitions': true});
+
+    function renderTree() {
+        if (newick && newick !== "None") {
+            d3.select("#tree_display").selectAll("*").remove();
+            tree = d3.layout.phylotree()
+                .svg(d3.select("#tree_display"))
+                .options({'selectable': true, 'collapsible': true});
+            tree(newick).layout();
+        }
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        renderTree();
+        {% if summaryTable %}
+        $(document).ready(function() {
+            new DataTable('#gtotreeSummaryTable', {
+                language: { searchPlaceholder: 'Filter genomes' },
+                layout: { topStart: 'search', bottomStart: { paging: { numbers: true, boundaryNumbers: true } }, topEnd: null, bottomEnd: 'pageLength' },
+                pageLength: 25,
+                createdRow: function(row, data) { if (String(data[data.length - 1]).trim() === 'No') { row.classList.add('not-in-tree'); } }
+            });
+        });
+        {% endif %}
+    });
+    function changeLayout(mode) {
+        tree.radial(mode === 'radial').placenodes().update();
+    }
+</script>
+{% endblock results %}

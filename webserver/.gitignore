@@ -1,0 +1,4 @@
+.env
+.envs/
+VERSION.local
+tools/admin_email.txt

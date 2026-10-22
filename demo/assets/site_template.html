@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BacLab - clickable demonstration</title>
+<style>
+html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+#ribbon { background: #fff3cd; color: #5c4400; border-bottom: 1px solid #e0cf8a; padding: 6px 14px; font-size: 0.85rem; display: flex; gap: 14px; flex-wrap: nowrap; align-items: center; height: 20px; overflow: hidden; white-space: nowrap; }
+#ribbon span { overflow: hidden; text-overflow: ellipsis; }
+#ribbon a { color: inherit; font-weight: 600; }
+#frame { display: block; width: 100%; height: calc(100% - 34px); border: 0; }
+#toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #ff1f1f; color: #fff; font-weight: 700; padding: 12px 22px; border-radius: 6px; font-size: 1rem;
+         box-shadow: 0 4px 16px rgba(0,0,0,.3); display: none; max-width: 80vw; z-index: 10; }
+</style>
+</head>
+<body>
+<div id="ribbon"><span>/*RIBBON*/</span>/*LINKS*/</div>
+<iframe id="frame" title="BacLab"></iframe>
+<div id="toast"></div>
+<script id="site-data" type="text/plain">/*DATA*/</script>
+<script>
+/*JS*/
+</script>
+</body>
+</html>

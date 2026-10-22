@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12 m10 offset-m1">
+            <h4 class="pagetitle" style="margin-top: 40px; margin-bottom: 20px;">
+                Taxonomy for Strain: {{ tax_data.Strain }}
+            </h4>
+
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Taxonomic Lineage</span>
+                    <p style="margin-bottom: 20px;">Click on any taxonomic rank to view it on the NCBI Taxonomy Browser.</p>
+                    
+                    <table class="striped responsive-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Domain</b></td>
+                                <td>
+                                    {% if tax_data.Domain and tax_data.Domain != 'NA' %}
+                                    <a href="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?name={{ tax_data.Domain }}" target="_blank">{{ tax_data.Domain }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Phylum</b></td>
+                                <td>
+                                    {% if tax_data.Phylum and tax_data.Phylum != 'NA' %}
+                                    <a href="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?name={{ tax_data.Phylum }}" target="_blank">{{ tax_data.Phylum }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Class</b></td>
+                                <td>
+                                    {% if tax_data.Class and tax_data.Class != 'NA' %}
+                                    <a href="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?name={{ tax_data.Class }}" target="_blank">{{ tax_data.Class }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Order</b></td>
+                                <td>
+                                    {% if tax_data.Order and tax_data.Order != 'NA' %}
+                                    <a href="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?name={{ tax_data.Order }}" target="_blank">{{ tax_data.Order }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Family</b></td>
+                                <td>
+                                    {% if tax_data.Family and tax_data.Family != 'NA' %}
+                                    <a href="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?name={{ tax_data.Family }}" target="_blank">{{ tax_data.Family }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Genus</b></td>
+                                <td>
+                                    {% if tax_data.Genus and tax_data.Genus != 'NA' %}
+                                    <a href="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?name={{ tax_data.Genus }}" target="_blank">{{ tax_data.Genus }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Species</b></td>
+                                <td>
+                                    {% if tax_data.Species and tax_data.Species != 'NA' %}
+                                    <a href="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?name={{ tax_data.Species }}" target="_blank">{{ tax_data.Species }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <a href="javascript:history.back()" class="btn waves-effect waves-light" style="margin-top: 20px;">
+                Back to Strains
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+# BacLab - PostgreSQL. Created from this template by `./baclab install`.
+# Changing the password later does not change the existing database: use ALTER USER in psql as well.
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=baclab
+POSTGRES_USER=@POSTGRES_USER@
+POSTGRES_PASSWORD=@POSTGRES_PASSWORD@

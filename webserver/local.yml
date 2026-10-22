@@ -1,0 +1,74 @@
+version: '3.7'
+volumes:
+  local_postgres_data: {}
+  local_postgres_data_backups: {}
+
+x-djangobase: &django-base
+  image: baclab_local_django
+  init: true
+  depends_on:
+    - postgres
+    - redis
+  env_file:
+    - ./.envs/.local/.django
+    - ./.envs/.local/.postgres
+  volumes:
+    - .:/app
+    - ../data:/large_data
+    - ../databases:/databases
+    - ../data:/data
+
+services:
+  django:
+    <<: *django-base
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+      args:
+        INSTALL_LDAP: ${INSTALL_LDAP:-0}
+    ports:
+      - "8000:8000"
+    command: /app/compose/local/django/start
+
+
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: baclab_production_postgres
+    volumes:
+      - local_postgres_data:/var/lib/postgresql/data
+      - local_postgres_data_backups:/backups
+    env_file:
+      - ./.envs/.local/.postgres
+  redis:
+    image: redis:5.0.14
+
+  celeryworker:
+    <<: *django-base
+    command: python manage.py celery
+    environment:
+      CELERY_WORKER_CONCURRENCY: 1
+
+  celerybeat:
+    <<: *django-base
+    command: /start-celerybeat
+
+  # Second worker that only takes the quick jobs ("fast" queue) - see production.yml
+  celeryworker_light:
+    <<: *django-base
+    command: python manage.py celery
+    environment:
+      CELERY_QUEUES: fast
+      CELERY_WORKER_CONCURRENCY: 1
+
+  # Maintenance container for `./baclab db ...` (see production.yml)
+  dbtools:
+    <<: *django-base
+    profiles: ["tools"]
+    depends_on: []
+    user: root
+    restart: "no"
+    entrypoint: ["/usr/bin/env"]   # no wait for postgres: only the databases folder is needed
+    command: ["true"]
+

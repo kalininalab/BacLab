@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use BacLab (BacLab) in your work, please cite the paper below once it is published; until then cite the software."
+title: "BacLab: a self-hosted, containerized web platform for integrated bacterial genomics and genome mining"
+type: software
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/kalininalab/BacLab"
+authors:
+  - family-names: "Yurtseven"
+    given-names: "Alper"
+  - family-names: "Keller"
+    given-names: "Sebastian"
+  - family-names: "Kalinina"
+    given-names: "Olga V."
+#  UPDATE webserver/baclab/citations.py once you have DOI
+preferred-citation:
+  type: article
+  title: "BacLab: a self-hosted, containerized web platform for integrated bacterial genomics and genome mining"
+  authors:
+    - family-names: "Yurtseven"
+      given-names: "Alper"
+    - family-names: "Keller"
+      given-names: "Sebastian"
+    - family-names: "Kalinina"
+      given-names: "Olga V."
+  journal: "PLACEHOLDER (journal)"
+  year: 2026
+  doi: "PLACEHOLDER (10.xxxx/xxxxx)"

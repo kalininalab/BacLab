@@ -1,0 +1,71 @@
+{% extends "tool_base.html" %}
+{% load static %}
+
+{# Submission page of every tool added in the admin (models.CustomTool): a multi-file picker, the tool's parameters and the standard e-mail/submit part of tool_base. #}
+
+{% block toolname %} {{ tool.title }} {% endblock %}
+
+{% block accepted_files %} {{ accepted_extensions|join:"," }} {% endblock %}
+
+{% block hiddenStatusInputButtonsDiv %} hide {% endblock %}
+
+{% block toolEntries %}
+<div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;">
+    <p>Upload {% if min_files == max_files %}{{ min_files }}{% else %}{{ min_files }} to {{ max_files }}{% endif %} file{{ max_files|pluralize }} ({{ accepted_extensions|join:", " }}).</p>
+    <div class="compact-file-field">
+        <div class="btn btn-small multi-file-btn">
+            <span>Add files</span>
+            <input id="genomes" type="file" name="genomes" accept="{{ accepted_extensions|join:',' }}" multiple>
+        </div>
+    </div>
+    <div id="genomes-list"></div>
+
+    {% for parameter in parameters %}
+    <div style="margin-top: 1rem;">
+        {% if parameter.type == 'choice' %}
+        <label for="param_{{ parameter.name }}">{{ parameter.label }}</label>
+        <select class="browser-default" id="param_{{ parameter.name }}" name="param_{{ parameter.name }}">
+            {% for option in parameter.choices %}<option value="{{ option }}"{% if option == parameter.default %} selected{% endif %}>{{ option }}</option>{% endfor %}
+        </select>
+        {% elif parameter.type == 'int' %}
+        <label for="param_{{ parameter.name }}">{{ parameter.label }} ({{ parameter.min }}-{{ parameter.max }})</label>
+        <input type="number" id="param_{{ parameter.name }}" name="param_{{ parameter.name }}" min="{{ parameter.min }}" max="{{ parameter.max }}" value="{{ parameter.default }}">
+        {% else %}
+        <label><input type="checkbox" id="param_{{ parameter.name }}" name="param_{{ parameter.name }}"{% if parameter.default %} checked{% endif %}><span>{{ parameter.label }}</span></label>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<script src="{% static 'js/multi_file_upload.js' %}"></script>
+<script>
+    // Files picked in several rounds are added to the list instead of replacing it
+    initMultiFileUpload({inputId: 'genomes', listId: 'genomes-list', extensions: [{% for e in accepted_extensions %}'{{ e|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}], minFiles: {{ min_files }}, maxFiles: {{ max_files }}});
+</script>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    function checkFields(){
+        var files = document.getElementById('genomes').files;
+        var allowedExtensions = [{% for e in accepted_extensions %}'{{ e|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+        if (files.length + accessionCount() < {{ min_files }}) {
+            alert('Please upload at least {{ min_files }} file(s).');
+            return false;
+        }
+        for (var i = 0; i < files.length; i++) {
+            var name = files[i].name.toLowerCase();
+            if (!allowedExtensions.some(function (ext) { return name.endsWith(ext); })) {
+                alert('"' + files[i].name + '" has an unsupported extension. Allowed extensions: ' + allowedExtensions.join(', ') + '.');
+                return false;
+            }
+        }
+        return true;
+    }
+</script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+    document.getElementById('fasta-input-container').hidden = true;
+    document.getElementById('upload-input-container').hidden = true;
+{% endblock %}

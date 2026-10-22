@@ -1,0 +1,55 @@
+{% extends "results.html" %}
+
+{% block results %}
+<div id="GenomeMining_Results_div" class="">
+    <div style="display: flex; flex-direction: column; width: 100%;">
+
+        <div style="width: 100%;" id="genomeMiningResultsTableDiv" class="">
+            <div style="padding-left: 0; margin-left: 20px;">
+                <h4>Genome Mining Closest BGC Results:</h4>
+                <div style="max-height: 60vh; overflow: auto;">
+                    {{ genomeMiningResultsTable|safe }}
+                </div>
+            </div>
+            <script>
+                    $(document).ready(function() {
+                        const table = new DataTable('#genomeMiningResultsTable', {
+                            language: { searchPlaceholder: 'Filter results' },
+                            layout: {
+                                topStart: 'search',
+                                bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                                topEnd: null,
+                                bottomEnd: 'pageLength'
+                            },
+                            order: [[10, 'asc']], // Sort by closest_distance column (index 10)
+                            columnDefs: [
+                                {
+                                    targets: 10,
+                                    render: function (data, type, row) {
+                                        if (type === 'sort' || type === 'type') {
+                                            return (data === 'NA' || data === 'NaN') ? 999999999 : Number(data);
+                                        }
+                                        return data;
+                                    }
+                                }
+                            ],
+                            pageLength: 10,
+                            scrollX: true
+                    });
+                });
+            </script>
+        </div>
+
+        {% if genomeMiningSummary %}
+        <div style="width: 100%; margin-bottom: 30px;">
+            <div style="padding-left: 0; margin-left: 20px;">
+                <h4>Homolog Search Summary:</h4>
+                <div style="max-height: 40vh; overflow: auto; background-color: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px;">
+                    <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{ genomeMiningSummary }}</pre>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock results %}

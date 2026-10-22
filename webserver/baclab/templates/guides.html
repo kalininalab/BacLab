@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} How to use the tools {% endblock %}
+
+{% block content %}
+<style>
+    #input-list li {
+        margin-left: 1em;
+        padding-left: 1em;
+        list-style-type: disc !important;
+    }
+
+    .bld {
+        font-weight: 600;
+    }
+
+    .true-list {
+        padding-left: revert !important;
+    }
+
+    .true-list li {
+        list-style-type: disc !important;
+    }
+
+    .mut-ex {
+        font-variant: small-caps;
+    }
+
+    .collapsible-header .mut-ex {
+        margin: 0 0.4rem;
+    }
+
+    .collapsible-body {
+        text-align: justify;
+    }
+
+    .custom-header {
+        font-size: 1.4rem;
+        font-weight: bold;
+    }
+
+    .category-heading {
+        margin-top: 2rem;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 2px solid var(--primary-color, #6366f1);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--primary-color, #6366f1);
+    }
+
+    .tool-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0 2rem;
+    }
+
+    .tool-category-card {
+        background-color: var(--bg-color, #f8fafc);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-left: 4px solid var(--primary-color, #6366f1);
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .tool-category-card .category-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-color, #334155);
+        margin-bottom: 0.75rem;
+    }
+
+    .tool-category-card .cat-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.6rem;
+        height: 1.6rem;
+        padding: 0 0.35rem;
+        border-radius: 50%;
+        background-color: var(--primary-color, #6366f1);
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .category-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .tool-pill {
+        display: inline-block;
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        background-color: var(--button-color, #6366f1);
+        color: #ffffff !important;
+        font-size: 0.82rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .tool-pill:hover {
+        background-color: var(--secondary-color, #4f46e5);
+        transform: translateY(-1px);
+    }
+
+</style>
+<div class="container">
+    <h4 class="pagetitle" style="margin-bottom: 0.3rem;">How to use the tools</h4>
+    <p style="color:#666;">Short step-by-step guides, grouped like the <b>tools</b> menu. Click a title to open it. <a href="{% url 'baclab:index' %}">&larr; back to the overview</a></p>
+
+    {% if dyn_tools.qc %}
+    <h5 class="category-heading">01 &middot; Quality Control &amp; Assembly</h5>
+    {% endif %}
+
+
+    {% for t in dyn_tools.qc %}
+    <ul class="collapsible">
+      <li>
+          {% include t.faq_template with tool=t %}
+      </li>
+    </ul>
+    {% endfor %}
+
+    {% if dyn_tools.amr %}
+    <h5 class="category-heading">02 &middot; AMR, Virulence &amp; Mobile Elements</h5>
+    {% endif %}
+
+
+    {% for t in dyn_tools.amr %}
+    <ul class="collapsible">
+      <li>
+          {% include t.faq_template with tool=t %}
+      </li>
+    </ul>
+    {% endfor %}
+
+    {% if dyn_tools.strain %}
+    <h5 class="category-heading">03 &middot; Strain Typing &amp; Taxonomy</h5>
+    {% endif %}
+
+
+    {% for t in dyn_tools.strain %}
+    <ul class="collapsible">
+      <li>
+          {% include t.faq_template with tool=t %}
+      </li>
+    </ul>
+    {% endfor %}
+
+    {% if dyn_tools.compgen %}
+    <h5 class="category-heading">04 &middot; Comparative Genomics</h5>
+    {% endif %}
+
+
+    {% for t in dyn_tools.compgen %}
+    <ul class="collapsible">
+      <li>
+          {% include t.faq_template with tool=t %}
+      </li>
+    </ul>
+    {% endfor %}
+
+    {% if dyn_tools.annot %}
+    <h5 class="category-heading">05 &middot; Annotation &amp; Biosynthetic Gene Clusters</h5>
+    {% endif %}
+
+
+    {% for t in dyn_tools.annot %}
+    <ul class="collapsible">
+      <li>
+          {% include t.faq_template with tool=t %}
+      </li>
+    </ul>
+    {% endfor %}
+
+    {% if dyn_tools.search %}
+    <h5 class="category-heading">06 &middot; Sequence Search</h5>
+    {% endif %}
+
+    {% for t in dyn_tools.search %}
+    <ul class="collapsible">
+      <li>
+          {% include t.faq_template with tool=t %}
+      </li>
+    </ul>
+    {% endfor %}
+
+
+</div>
+
+{% endblock content %}

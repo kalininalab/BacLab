@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block css %}{% include "_job_styles.html" %}{% endblock css %}
+
+{% block content %}
+<div class="jobs-page">
+  <p><a href="{% url 'baclab:my_jobs' %}{% if not is_owner %}?scope=group{% endif %}">&larr; back to my jobs</a></p>
+
+  <h4 style="margin-bottom: 0.2rem;">{% if job.label %}{{ job.label }}{% else %}{{ job.tool_label }}{% endif %}
+    <span class="status-badge status-{{ job.status }}" style="vertical-align: middle;">{{ job.get_status_display }}</span></h4>
+  <p class="muted" style="margin-top: 0;">
+    {% if job.label %}{{ job.tool_label }} &middot; {% endif %}
+  </p>
+
+  <div class="job-layout">
+    <div>
+      {% if job.status == 'failed' %}
+      <div class="alert alert-bad">
+        <b>This analysis did not produce results.</b>
+        <p style="margin: 0.4rem 0 0;">{{ job.error_message|default:"An unexpected error occurred." }}</p>
+        <p class="howto" style="margin-bottom: 0;">Check that your input is in the expected format and try again. If it keeps failing, contact us with the job ID below.</p>
+      </div>
+      {% elif job.is_active %}
+      <div class="alert alert-info">
+        <b>{% if job.status == 'queued' %}Waiting in the queue&hellip;{% else %}Your analysis is running&hellip;{% endif %}</b>
+        <div>This page updates automatically. Longer analyses can take a while.</div>
+        <div class="indeterminate"></div>
+      </div>
+      {% else %}
+      <div class="actions">
+        <a class="btn" href="{% url 'baclab:results' %}?job_id={{ job.job_id }}">Open full results</a>
+        <a class="btn-flat" style="border: 1px solid var(--button-color, #005aa2); color: var(--button-color, #005aa2);" href="{% url 'baclab:results' %}?job_id={{ job.job_id }}&amp;download=1">Download (.zip)</a>
+        <a class="btn-flat" style="border: 1px solid var(--button-color, #005aa2); color: var(--button-color, #005aa2);" href="{% url 'baclab:send_to' job.job_id %}">Use results in another tool</a>
+        <form method="post" action="{% url 'baclab:rerun' job.job_id %}" style="display: inline;">{% csrf_token %}<button type="submit" class="btn-flat" style="border: 1px solid var(--button-color, #005aa2); color: var(--button-color, #005aa2);">Run again</button></form>
+      </div>
+      {% endif %}
+
+      {% if methods %}
+      <details class="card" style="padding: 0.6rem 1rem;">
+        <summary style="cursor: pointer; font-weight: 500;">Methods text for your paper</summary>
+        <pre style="white-space: pre-wrap; margin: 0.6rem 0; font-family: inherit; font-size: 0.9rem;" id="methods-text">{{ methods }}</pre>
+        <a class="btn-small btn" href="{% url 'baclab:job_methods' job.job_id %}">Download .txt</a>
+        <button type="button" class="btn-small btn" onclick="navigator.clipboard.writeText(document.getElementById('methods-text').innerText)">Copy</button>
+      </details>
+      {% endif %}
+
+      {% if summary %}
+      <div class="card">
+        <h6>Key findings</h6>
+        <p class="headline status-{{ summary.status|default:'none' }}">{{ summary.headline }}</p>
+        {% if summary.tiles %}
+        <div class="tiles" style="margin-top: 1rem;">
+          {% for tile in summary.tiles %}
+          <div class="tile">
+            <div class="tile-value">{{ tile.value }}</div>
+            <div class="tile-label">{{ tile.label }}</div>
+            {% if tile.note %}<div class="tile-note">{{ tile.note }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div>
+      <div class="card">
+        <h6>Your input</h6>
+        <table class="facts">
+          {% for name in input_files %}<tr><td>{% if forloop.first %}Input{% endif %}</td><td>{{ name }}</td></tr>{% endfor %}
+          {% for name, value in job.parameters.settings.items %}<tr><td>{{ name }}</td><td>{{ value }}</td></tr>{% endfor %}
+          {% if not input_files and not job.parameters.settings %}<tr><td colspan="2" class="muted">Not recorded for this job.</td></tr>{% endif %}
+        </table>
+      </div>
+
+      <div class="card">
+        <h6>About this run</h6>
+        <table class="facts">
+          <tr><td>Tool</td><td>{{ job.tool_label }}</td></tr>
+          {% if not is_owner %}<tr><td>Submitted by</td><td>{{ job.owner.username }}{% if job.group %} ({{ job.group.name }}){% endif %}</td></tr>{% endif %}
+          <tr><td>Submitted</td><td>{{ job.queued_at|date:"Y-m-d H:i" }}</td></tr>
+          {% if job.finished_at %}<tr><td>Finished</td><td>{{ job.finished_at|date:"Y-m-d H:i" }}</td></tr>{% endif %}
+          {% if job.duration_display %}<tr><td>Runtime</td><td>{{ job.duration_display }}</td></tr>{% endif %}
+          <tr><td>Results kept until</td><td><span{% if job.expires_soon %} class="expires-soon"{% endif %}>{{ job.expires_at|date:"Y-m-d" }}</span></td></tr>
+          <tr><td>Job ID</td><td class="job-id">{{ job.job_id }}
+            <button type="button" class="copy-btn" data-copy="{% url 'baclab:results' %}?job_id={{ job.job_id }}">copy link</button></td></tr>
+        </table>
+
+        {% if is_owner %}
+        <form method="post" action="{% url 'baclab:set_retention' job.job_id %}" style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.75rem;">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <select name="days" class="browser-default" style="width: auto; height: 2rem;" title="Keep the results of this job for">
+            {% for days in retention_choices %}<option value="{{ days }}"{% if days == job.effective_retention_days %} selected{% endif %}>Keep {{ days }} days</option>{% endfor %}
+          </select>
+          <button type="submit" class="btn-small">Save</button>
+        </form>
+        <form method="post" action="{% url 'baclab:set_private' job.job_id %}" style="margin-top: 0.75rem;">
+          {% csrf_token %}
+          <input type="hidden" name="private" value="{% if job.private %}0{% else %}1{% endif %}">
+          <span class="muted">{% if job.private %}Private: only you{% if job.group %} and your group{% endif %} can open the results.{% else %}Anyone with the link can open the results.{% endif %}</span>
+          <button type="submit" class="btn-small">{% if job.private %}Make public{% else %}Make private{% endif %}</button>
+        </form>
+        <form method="post" action="{% url 'baclab:set_project' job.job_id %}" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.75rem;">
+          {% csrf_token %}
+          <select name="project" class="browser-default" style="width: auto; height: 2rem;" title="Project">
+            <option value="">No project</option>
+            {% for p in projects %}<option value="{{ p.pk }}"{% if job.project_id == p.pk %} selected{% endif %}>{{ p.name }}</option>{% endfor %}
+          </select>
+          <input type="text" name="new_project" maxlength="100" placeholder="or a new project" style="margin: 0; width: 11rem;">
+          <button type="submit" class="btn-small">Save</button>
+        </form>
+        <form method="post" action="{% url 'baclab:set_label' job.job_id %}" style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.75rem;">
+          {% csrf_token %}
+          <input type="text" name="label" value="{{ job.label }}" maxlength="100" placeholder="Name this run, e.g. &quot;K12 reference&quot;" style="margin: 0;">
+          <button type="submit" class="btn-small">Save</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if active %}
+<script>setTimeout(function () { window.location.reload(); }, 10000);</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% load static %}
+    <div class="collapsible-header custom-header grey lighten-4">
+    How to use BLAST?
+    </div>
+    <div class="collapsible-body">
+    <p class="spaced-list">
+    <p>You can input your sequences using one of the following methods:</p>
+    <p class="indented">1. Text input (FASTA format)</p>
+    <p class="indented">2. File upload (FASTA format (.fasta))</p>
+    <center>
+    <div><img src="{% static 'images/blast_input.png' %}" width="100%"></div>
+    </center>
+    <p>You can select BLAST type by using the dropdown</p>
+    <p>You can adjust the E-value cutoff or keep the default.</p>
+    <p>Click Submit to start the job. You will receive a job ID and be redirected to the results page. You can revisit later with that ID.</p>
+    <p>You can view BLAST results on the webpage</p>
+    <p>You can sort columns or search within the table interactively.</p>
+    <center>
+    <div><img src="{% static 'images/blast_results.png' %}" width="100%"></div>
+    </center>
+    <p>You can download results by clicking Download Results button.</p>
+    </p>
+    </div>
+        

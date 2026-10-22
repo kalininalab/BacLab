@@ -1,0 +1,236 @@
+{% extends "tool_base.html" %}
+{% load static %}
+
+{% block toolJS %}
+  <script src="{% static 'js/qrcode.min.js' %}"></script>
+  <script src="{% static 'js/qr-code-styling.js' %}"></script>
+{% endblock %}
+
+{% block toolname %} QR Code Generator {% endblock %}
+
+{% block accepted_files %} {% endblock %}
+
+{% block toolEntries %}
+  <div class="col s12 m8 offset-m2" style="width:75%;margin-top:20px;margin-left:20px;margin-right:50px;">
+    <div class="input-field col s12" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="website-input-container">
+      <input id="website" name="website" type="text" class="validate" required>
+      <label for="website">Enter URL or Text</label>
+      <span class="helper-text" data-error="This field is required">Please enter a valid URL or text.</span>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;">
+      <label style="display:block;">Foreground Color</label>
+        <br>
+        <br>
+      <select id="fgColor" class="browser-default">
+        <option value="#000000">Black</option>
+        <option value="#1a73e8">Blue</option>
+        <option value="#d93025">Red</option>
+        <option value="#188038">Green</option>
+        <option value="#f9ab00">Orange</option>
+        <option value="#6d28d9">Purple</option>
+        <option value="#ffffff">White</option>
+      </select>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;">
+      <label style="display:block;">Background Color</label>
+        <br>
+        <br>
+      <select id="bgColor" class="browser-default">
+        <option value="transparent" selected>Transparent</option>
+        <option value="#ffffff">White</option>
+        <option value="#000000">Black</option>
+        <option value="#f1f3f4">Light Grey</option>
+        <option value="#ffe4b5">Moccasin</option>
+        <option value="#fff9c4">Light Yellow</option>
+        <option value="#e0f7fa">Light Cyan</option>
+      </select>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;">
+      <label style="display:block;">Styling</label>
+        <br>
+        <br>
+      <select id="styling" class="browser-default">
+        <option value="square" selected>Square</option>
+        <option value="dots">Dots</option>
+        <option value="classy">Classy</option>
+        <option value="classy-rounded">Classy Rounded</option>
+        <option value="extra-rounded">Extra Rounded</option>
+        <option value="circle">Circle</option>
+        <option value="rounded">Rounded</option>
+      </select>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left:20px;margin-top:40px;margin-bottom:40px;">
+      <label style="display:block;">Center Image</label>
+      <br><br>
+      <select id="centerImageMode" class="browser-default" style="max-width:260px;">
+        <option value="none" selected>No Image</option>
+        <!-- YOU CAN ADD YOUR LOGO HERE -->
+        <option value="upload">Upload Image...</option>
+      </select>
+      <input id="centerImageFile" type="file" accept="image/png,image/jpeg,image/webp" style="display:none;margin-top:10px;">
+      <small id="centerImageHint" style="display:block;color:#555;margin-top:6px;">
+        Recommended: square PNG, transparent background.
+      </small>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left:20px;margin-top:0;margin-bottom:10px;">
+      <label style="display:block;">Size (pixels)</label>
+            <br>
+        <br>
+      <select id="qrSize" class="browser-default" style="max-width:160px;">
+        <option value="256">256 (Small)</option>
+        <option value="512" selected>512 (Default)</option>
+        <option value="768">768 (Medium)</option>
+        <option value="1024">1024 (Large)</option>
+        <option value="2048">2048 (XL)</option>
+        <option value="4096">4096 (Poster)</option>
+      </select>
+      <small style="color:#555;">Higher value = higher resolution output.</small>
+    </div>
+
+    <div class="col s12" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;">
+      <a id="generateBtn" class="btn waves-effect">Generate</a>
+      <a id="downloadBtn" class="btn grey waves-effect disabled" download="qrcode.png">Download</a>
+    </div>
+
+    <div class="col s12" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;">
+      <div id="qrcode" style="padding:10px;border:1px solid #ddd;display:inline-block;"></div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block toolSpecificChecks %}{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+  document.getElementById('inputSelectionButtons').hidden = true;
+  document.getElementById('fasta-input-container').hidden = true;
+  document.getElementById('submitButton').style.display = 'none';
+
+  function initQR(){
+    const input  = document.getElementById('website');
+    const fgSel  = document.getElementById('fgColor');
+    const bgSel  = document.getElementById('bgColor');
+    const styleSel = document.getElementById('styling');
+    const modeSel = document.getElementById('centerImageMode');
+    const fileInp = document.getElementById('centerImageFile');
+    const genBtn = document.getElementById('generateBtn');
+    const dlBtn  = document.getElementById('downloadBtn');
+    const box    = document.getElementById('qrcode');
+    const sizeSel = document.getElementById('qrSize');
+
+    let uploadedImageData = null;
+
+    modeSel.addEventListener('change', ()=>{
+      if (modeSel.value === 'upload'){
+        fileInp.style.display = 'block';
+      } else {
+        fileInp.style.display = 'none';
+      }
+    });
+
+    fileInp.addEventListener('change', ()=>{
+      const f = fileInp.files[0];
+      if(!f){ uploadedImageData = null; return; }
+      if (f.size > 4096*1024){
+        alert('Image too large (>4MB).');
+        fileInp.value = '';
+        uploadedImageData = null;
+        return;
+      }
+      const fr = new FileReader();
+      fr.onload = e => uploadedImageData = e.target.result;
+      fr.readAsDataURL(f);
+    });
+
+    function mapStyle(v){
+      switch(v){
+        case 'dots': return { type: 'dots', cornerSquareType:'extra-rounded', cornerDotType:'dot' };
+        case 'classy': return { type:'square', cornerSquareType:'extra-rounded', cornerDotType:'square' };
+        case 'classy-rounded': return { type:'square', cornerSquareType:'extra-rounded', cornerDotType:'dot' };
+        case 'extra-rounded': return { type:'dots', cornerSquareType:'extra-rounded', cornerDotType:'dot' };
+        case 'circle': return { type:'dots', cornerSquareType:'dot', cornerDotType:'dot' };
+        case 'rounded': return { type:'round', cornerSquareType:'extra-rounded', cornerDotType:'dot' };
+        default: return { type:'square', cornerSquareType:'square', cornerDotType:'square' };
+      }
+    }
+
+    function resolveCenterImage(){
+      if (modeSel.value === 'upload') return uploadedImageData;
+      return null;
+    }
+
+    async function generate(){
+      const text = input.value.trim();
+      if(!text){ input.focus(); return; }
+      box.innerHTML = '';
+      dlBtn.classList.add('grey','disabled');
+
+      const centerImg = resolveCenterImage();
+      const styleMap = mapStyle(styleSel.value);
+      const size = parseInt(sizeSel.value,10) || 512;
+
+      if (window.QRCodeStyling){
+        const cfg = {
+          data: text,
+          width: size,
+          height: size,
+          type: "canvas",
+          backgroundOptions: { color: bgSel.value === 'transparent' ? 'rgba(0,0,0,0)' : bgSel.value },
+          dotsOptions: { color: fgSel.value, type: styleMap.type },
+          cornersSquareOptions: { type: styleMap.cornerSquareType, color: fgSel.value },
+            cornersDotOptions: { type: styleMap.cornerDotType, color: fgSel.value },
+          qrOptions: { errorCorrectionLevel: 'H' }
+        };
+        if (centerImg){
+          cfg.image = centerImg;
+          cfg.imageOptions = {
+            crossOrigin: "anonymous",
+            margin: 4,
+            imageSize: 0.25, /* 25% of QR width */
+            hideBackgroundDots: true
+          };
+        }
+        const styledQR = new QRCodeStyling(cfg);
+        styledQR.append(box);
+        const dataURL = await styledQR.getRawData("png").then(blob=>new Promise(r=>{
+          const fr = new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob);
+        }));
+        dlBtn.href = dataURL;
+        dlBtn.classList.remove('grey','disabled');
+      } else if (window.QRCode){
+        // Basic fallback (no center image support here)
+        new QRCode(box,{
+          text,
+          width:size,
+          height:size,
+          colorDark: fgSel.value,
+          colorLight: (bgSel.value === 'transparent') ? '#ffffff00' : bgSel.value,
+          correctLevel: QRCode.CorrectLevel.H
+        });
+        setTimeout(()=>{
+          const canvas = box.querySelector('canvas');
+            if(canvas){
+              dlBtn.href = canvas.toDataURL('image/png');
+              dlBtn.classList.remove('grey','disabled');
+            }
+        },120);
+      } else {
+        console.error("No QR library loaded.");
+      }
+    }
+
+    // Attach change listeners to auto-regenerate
+    [fgSel, bgSel, styleSel, sizeSel].forEach(el=>{
+      el.addEventListener('change', ()=>generate());
+    });
+    modeSel.addEventListener('change', ()=>{ /* existing show/hide */ generate(); });
+
+    genBtn.addEventListener('click', generate);
+  }
+
+  initQR();
+{% endblock %}

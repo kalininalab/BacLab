@@ -1,0 +1,8 @@
+name: server_mobsuite
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.10.14
+  - mob_suite==3.1.9

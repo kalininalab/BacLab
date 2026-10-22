@@ -1,0 +1,20 @@
+{% load static %}
+    <div class="collapsible-header custom-header grey lighten-4">
+    How to annotate genome?
+    </div>
+    <div class="collapsible-body">
+    <p class="spaced-list">
+    <p>You can provide your sequences by uploading FASTA format (.fasta or .fna)</p>
+    <center>
+    <div><img src="{% static 'images/annotation_input.png' %}" width="100%"></div>
+    </center>
+    <p>Select tools using the checkboxes; all are selected by default.</p>
+    <p>Supported tools:</p>
+    <p class="indented">1. antiSMASH</p>
+    <p class="indented">2. Bakta</p>
+    <p class="indented">3. Prokka</p> 
+    <p>After choosing your options, click Submit to start the annotation job.</p>
+    <p>You will receive a job ID and can revisit later if you do not wait for completion.</p>
+    </p>
+    </div>
+        

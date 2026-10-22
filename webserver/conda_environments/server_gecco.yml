@@ -1,0 +1,11 @@
+name: server_gecco
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.10.22
+  - hmmer==3.4
+  - pip
+  - pip:
+      - gecco-tool==0.10.0

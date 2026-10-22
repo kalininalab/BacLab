@@ -1,0 +1,14 @@
+name: server_genomemining
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+  - r
+channel_priority: strict
+dependencies:
+  - blast==2.13.0
+  - requests==2.34.2
+  - biopython==1.87
+  - pandas==3.0.3
+  - mafft==7.526
+  - hmmer==3.4

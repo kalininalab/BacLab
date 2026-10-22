@@ -1,0 +1,63 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} Taxonomy Finder {% endblock %}
+{% block tool_description %}
+Identify taxonomic classification for microbial genomes using GTDB-Tk. <strong>Expected input:</strong> Complete or draft genomes in FASTA format <code>(.fasta, .fna, .faa)</code>.
+{% endblock %}
+
+
+{% block accepted_files %} .fasta, .fna, .faa {% endblock %}
+
+{% block toolEntries %}
+  <div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 20px; margin-right: 50px;">
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="taxonomy-type-container">
+        <label for="taxonomy_type" style="margin-top: -10px;">Taxonomy type:</label>
+        <br>
+        <br>
+        <select class="browser-default" onchange="runtimewarning()" name="taxonomy_type" id="taxonomy_type">
+            <option value="16s">16s rRNA (with NCBI taxonomy finder)</option>
+            <option value="wholegenome">Whole genome (with GTDB-tk)</option>
+        </select>
+        <div class="input-field col s12 m8 offset-m2" style="margin-top: 40px; margin-bottom: 40px;" id="taxonomy-type-warning" hidden>
+            <i style="color: red;">Warning: Whole genome taxonomy classification with GTDB-tk may take a long time (~2-3 hours) depending on the number and size of genomes provided.</i>
+            
+    </div>
+
+  </div>
+
+  <script>
+
+    function runtimewarning(){
+        var taxonomy_type = document.getElementById("taxonomy_type").value;
+
+        if (taxonomy_type === "wholegenome") {
+            document.getElementById("taxonomy-type-warning").hidden = false;
+        } else {
+            document.getElementById("taxonomy-type-warning").hidden = true;
+        }
+    }
+
+  </script>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+
+<script>
+
+    function checkFields() {
+        const useExample = document.getElementById("use_example_data");
+        if (useExample && (useExample.value === "true" || useExample.value === "1")) {
+            return true;
+        }
+
+        return true;
+    }
+
+
+</script>
+    
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+
+{% endblock %}

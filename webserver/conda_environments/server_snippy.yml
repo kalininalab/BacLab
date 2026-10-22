@@ -1,0 +1,10 @@
+name: server_snippy
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - snippy==4.6.0
+  - ncbi-datasets-cli==18.39.0
+  - entrez-direct==26.0
+  - unzip==6.0

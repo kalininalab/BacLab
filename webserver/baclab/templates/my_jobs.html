@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block css %}{% include "_job_styles.html" %}{% endblock css %}
+
+{% block content %}
+<div class="jobs-page">
+  <h4>My jobs</h4>
+  <p>Logged in as <b>{{ user.username }}</b>{% if group %}, group <b>{{ group.name }}</b>{% else %} (no group assigned - ask an administrator if you want to share jobs with colleagues){% endif %}.
+    <a href="{% url 'baclab:password_change' %}">change password</a>{% if api_enabled %} &middot; <a href="{% url 'baclab:api_keys' %}">API keys</a>{% endif %}. Results are deleted from our servers {{ default_retention }} days after a job by default; for your own jobs you can choose a longer period.</p>
+
+  {% if messages %}{% for message in messages %}<p class="{% if message.tags == 'error' %}red-text{% else %}green-text{% endif %}" style="margin: 0.3rem 0;">{{ message }}</p>{% endfor %}{% endif %}
+  <form method="post" action="{% url 'baclab:set_email' %}" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin: 0.6rem 0 1rem;">
+    {% csrf_token %}
+    <label for="notify-email" style="margin: 0;">E-mail for job notifications:</label>
+    <input id="notify-email" type="email" name="email" value="{{ user.email }}" placeholder="you@example.org" style="margin: 0; width: 18rem;">
+    <button type="submit" class="btn-small">Save</button>
+    {% if email_policy_hint %}<span class="muted">{{ email_policy_hint }}</span>{% endif %}
+  </form>
+
+  {% if projects %}
+  <p style="margin: 0 0 0.6rem;">Projects:
+    <a href="{% url 'baclab:my_jobs' %}" class="{% if not project_id %}active{% endif %}">all runs</a>
+    {% for p in projects %} &middot; <a href="?project={{ p.pk }}">{{ p.name }}</a> (<a href="{% url 'baclab:project_detail' p.pk %}">overview</a>){% endfor %}
+  </p>
+  {% endif %}
+
+  {% if group %}
+  <div class="jobs-tabs">
+    <a href="?scope=mine" class="{% if scope == 'mine' %}active{% endif %}">My jobs</a>
+    <a href="?scope=group" class="{% if scope == 'group' %}active{% endif %}">Group {{ group.name }}</a>
+  </div>
+  {% endif %}
+
+  <div class="jobs-summary">
+    <a href="?scope={{ scope }}&group_by={{ group_by }}" class="{% if not status %}active{% endif %}"><span class="count">{{ total_jobs }}</span>all</a>
+    {% for code, name in status_choices %}
+    <a href="?scope={{ scope }}&group_by={{ group_by }}&status={{ code }}" class="{% if status == code %}active{% endif %}">
+      <span class="count">{% for c, n in status_counts.items %}{% if c == code %}{{ n }}{% endif %}{% endfor %}</span>{{ name|lower }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <form method="get" class="jobs-controls">
+    <input type="hidden" name="scope" value="{{ scope }}">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search job ID, name, tool{% if show_owner %}, user{% endif %}">
+    <select name="status" class="browser-default">
+      <option value="">Any status</option>
+      {% for code, name in status_choices %}<option value="{{ code }}"{% if status == code %} selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+    <label>Group by
+      <select name="group_by" class="browser-default" style="display: inline-block;">
+        {% for code, name in group_by_choices %}<option value="{{ code }}"{% if group_by == code %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn-small">Apply</button>
+    {% if query or status %}<a href="?scope={{ scope }}&group_by={{ group_by }}">clear filters</a>{% endif %}
+  </form>
+
+  {% if not shown_jobs %}
+    <p class="muted">
+      {% if total_jobs %}No jobs match your filters.
+      {% elif scope == 'group' %}No other jobs from your group yet.
+      {% else %}You have not submitted any jobs while logged in yet.{% endif %}
+    </p>
+  {% endif %}
+
+  {% for title, jobs in sections %}
+    {% if title %}
+    <details class="jobs-section" open>
+      <summary>{{ title }}<span class="section-count">{{ jobs|length }} job{{ jobs|length|pluralize }}</span></summary>
+      {% include "my_jobs_table.html" %}
+    </details>
+    {% else %}
+      {% include "my_jobs_table.html" %}
+    {% endif %}
+  {% endfor %}
+
+  {% if limit_reached %}<p class="muted">Only the most recent jobs are shown.</p>{% endif %}
+</div>
+
+{% if has_active_jobs %}
+<script>
+  // Keep running jobs up to date, unless the user is in the middle of typing/choosing something
+  setInterval(function () {
+    var focused = document.activeElement;
+    if (!focused || focused === document.body) { window.location.reload(); }
+  }, 20000);
+</script>
+{% endif %}
+{% endblock %}

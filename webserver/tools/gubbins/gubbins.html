@@ -1,0 +1,44 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} Gubbins {% endblock %}
+{% block tool_description %}
+Gubbins detects and masks recombinant regions in a bacterial whole-genome alignment before building a phylogeny - the standard companion step to snippy-core / the phylogeny pipeline. <strong>Expected input:</strong> a single multi-FASTA whole-genome alignment <code>(.fasta, .fa, .aln, .full)</code>.
+{% endblock %}
+
+{% block hiddenStatusInputButtonsDiv %} hidden {% endblock %}
+
+{% block accepted_files %} .fasta, .fa, .aln, .full {% endblock %}
+
+{% block text_input_container %}
+{% endblock %}
+
+{% block file_upload_container %}
+        <div class="file-field input-field" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;" id="upload-input-container">
+            <div style="width: 100%; display: flex; gap: 10px; align-items: flex-start;">
+                <div class="file-field input-field" style="margin: 0;">
+                    <div class="btn btn-small" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;">
+                        <span>Upload alignment</span>
+                        <input id="file" type="file" name="file" accept="{% block accepted_files_inner %} .fasta, .fa, .aln, .full {% endblock %}" onchange="showFileName(this)">
+                    </div>
+                </div>
+                <div class="input-field" style="margin: 0;">
+                    <button type="button" class="btn btn-small waves-effect waves-light" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;" id="load-example-btn" onclick="loadExampleData()">Load Example Data</button>
+                </div>
+            </div>
+        </div>
+        <div id="file-name" style="margin: 20px; margin-left: 50px;"></div>
+{% endblock %}
+
+{% block toolEntries %}
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    function checkFields() {
+        return true;
+    }
+</script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+{% endblock %}

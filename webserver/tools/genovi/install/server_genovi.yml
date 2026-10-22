@@ -1,0 +1,16 @@
+name: server_genovi
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # GenoVi's own install instructions pin python 3.7 (its circos wrapper/cairosvg stack is only
+  # tested there) - confirmed working end to end with circos 0.69.9.
+  - python==3.7.12
+  - circos==0.69.9
+  # cairosvg (used for GenoVi's PNG output) loads libcairo at runtime; without it GenoVi crashes with
+  # "No such file or directory: genovi_x-contig_1.png" on images that don't ship system cairo.
+  - cairo==1.18.4
+  - pip
+  - pip:
+      - genovi==0.4.3

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block css %}
+
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<script type="text/javascript" src="{% static 'js/datatables.min.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables.min.css' %}">
+
+{% endblock %}
+
+{% block content %}
+<div class="col s12 m8 offset-m2">
+
+    <div class="col s12 m8 offset-m2" style="margin: 20px; margin-left: 50px;">
+        <h4 class="pagetitle">
+
+        {% block strains_name %}{{ page_title|default:"All Strains Collection" }}{% endblock %}
+
+        </h4>
+
+
+
+        {% block strainstable %}
+            {% if StrainsTable %}
+                {% if tree_exists %}
+                <a href="{% url 'baclab:phylogenetic_tree' %}" class="btn" style="width: 18%; margin-left: 20px">View Phylogenetic Tree</a>
+                {% endif %}
+                {% if tax_exists %}
+                <a href="{% url 'baclab:taxonomy_database' %}" class="btn" style="width: 18%; margin-left: 20px">View Taxonomy DB</a>
+                {% endif %}
+
+                <div id="StrainsTable_div" class="">    
+                    <div style="display: flex; justify-content: space-between;">
+                        <div style="width: 100%; margin-right: 20px;" id="blastTabularTable" class="">
+                            <div style="padding-left: 0; margin-left: 20px;">
+                                <div style="height: 75vh; overflow: auto;">
+                                    {{ StrainsTable|safe }}
+                                </div>
+                            </div>
+                            <script>
+                                $(document).ready(function() {
+                                    const table = new DataTable('#StrainsTable', {
+                                        language: { searchPlaceholder: 'Filter results' },
+                                        layout: {
+                                            topStart: 'search',
+                                            bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                                            topEnd: null,
+                                            bottomEnd: 'pageLength'
+                                        },
+                                        pageLength: 100,
+                                        columnDefs: [
+                                            {
+                                                targets: 1,      
+                                                visible: false,  
+                                                searchable: true
+                                            }
+                                        ]
+                                    });
+                                });
+                            </script>
+                            
+                            
+                        </div>
+
+                    </div>
+                </div>
+            {% endif %}
+        {% endblock %}
+
+    </div>
+</div>
+{% endblock %}
+
+
+

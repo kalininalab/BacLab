@@ -1,0 +1,250 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} CBlaster {% endblock %}
+{% block tool_description %}
+Search for biosynthetic gene clusters (BGCs) across genomes. <strong>Expected input:</strong> GenBank files with CDS annotations <code>(.gbk, .gb, .gbff)</code> or FASTA sequences <code>(.fasta, .fa, .faa)</code>.
+{% endblock %}
+
+
+{% block hiddenStatusInputButtonsDiv %} hidden {% endblock %}
+
+{% block accepted_files %} .gbk, .gb, .gbff, .fasta, .fa, .faa, .fna {% endblock %}
+
+{% block text_input_container %}
+{% endblock %}
+
+{% block file_upload_container %}
+        <div class="file-field input-field" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;" id="upload-input-container">
+            <div style="width: 100%; display: flex; gap: 10px; align-items: flex-start;">
+                <div class="file-field input-field" style="margin: 0;">
+                    <div class="btn btn-small" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;">
+                        <span>Upload file</span>
+                        <input id="file" type="file" name="file" accept="{% block accepted_files_inner %} .gbk, .gb, .gbff, .fasta, .fa, .faa, .fna {% endblock %}" onchange="showFileName(this)">
+                    </div>
+                </div>
+                <div class="input-field" style="margin: 0;">
+                    <button type="button" class="btn btn-small waves-effect waves-light" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;" id="load-example-btn" onclick="loadExampleData()">Load Example Data</button>
+                </div>
+            </div>
+        </div>
+        <div id="file-name" style="margin: 20px; margin-left: 50px;"></div>
+{% endblock %}
+
+{% block toolEntries %}
+  <div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 20px; margin-right: 50px;">
+    <div class="input-field col s12 m8 offset-m2" style="display: none;" id="mode-container">
+        <select onchange="updateCBlasterUI()" name="mode" id="mode">
+            <option value="local" selected="selected">Local</option>
+        </select>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="database-container">
+        <label for="database" style="margin-top: -10px;">Database:</label>
+        <br>
+        <br>
+        <select onchange="updateCBlasterUI();" name="database" id="database">
+            {% for option in database_options %}
+                <option value="{{ option.value }}" {% if option.disabled %}disabled{% endif %} {% if option.value == "all_inhouse_strains.dmnd" %}selected="selected"{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+        </select>
+
+
+    </div>
+
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="dmnd_sensitivity-container">
+        <label for="dmnd_sensitivity" style="margin-top: -10px;">DMND sensitivity: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Higher sensitivity finds more distant homologs but takes much longer to run">❓</i></label>
+        <br>
+        <br>
+        <select name="dmnd_sensitivity" id="dmnd_sensitivity">
+            <option value="fast" selected>fast</option>
+            <option value="mid">mid</option>
+            <option value="sensitive">sensitive</option>
+            <option value="more">more</option>
+            <option value="very">very</option>
+            <option value="ultra">ultra</option>
+        </select>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maxvalue-container">
+        <label for="maximum_hits" style="margin-top: 10px">Maximum hits: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Maximum number of BLAST hits to return per query sequence">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="maximum_hits" id="maximum_hits" placeholder="500" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>500</textarea>
+    </div>
+
+    <div class="col s12 m8 offset-m2" style="margin: 20px;">
+        <input type="checkbox" name="find_intermediate_genes" id="find_intermediate_genes" checked>
+        <label for="find_intermediate_genes" style="margin-left:20px"> Find Intermediate Genes <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Identifies genes connecting clustered hits that didn't match the initial query">❓</i></label><br>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="maximum_distance" style="margin-top: 10px">Maximum distance: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Maximum allowed distance between hits in a cluster (in base pairs or genes)">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="maximum_distance" id="maximum_distance" placeholder="50" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>50</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="maximum_clusters" style="margin-top: 10px">Maximum clusters: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Maximum number of clusters to form per scaffold">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="maximum_clusters" id="maximum_clusters" placeholder="10" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>10</textarea>
+    </div>
+
+    <!-- Filtering -->
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="maximum_evalue" style="margin-top: 10px">Maximum e-value: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Maximum expectation value cutoff for BLAST hits">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="maximum_evalue" id="maximum_evalue" placeholder="0.01" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>0.01</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="minimum_identitiy" style="margin-top: 10px">Minimum identity (%): <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Minimum percentage identity required for a valid hit">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="minimum_identitiy" id="minimum_identitiy" placeholder="30" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>30</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="minimum_query_coverage" style="margin-top: 10px">Minimum query coverage (%): <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Minimum percentage of the query sequence that must be covered by the hit">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="minimum_query_coverage" id="minimum_query_coverage" placeholder="50" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>50</textarea>
+    </div>
+
+    <!-- Clustering -->
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="maximum_intergenicgap" style="margin-top: 10px">Maximum intergenic gap: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Maximum allowed gap between clustered hits (in bp)">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="maximum_intergenicgap" id="maximum_intergenicgap" placeholder="20000" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>20000</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="percentage" style="margin-top: 10px">Clustering percentage: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Minimum percentage of core query genes that must be present in a cluster">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="percentage" id="percentage" placeholder="30" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>30</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="minimum_uniquequeryhits" style="margin-top: 10px">Minimum unique query hits: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Minimum number of unique query genes that must match in a cluster">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="minimum_uniquequeryhits" id="minimum_uniquequeryhits" placeholder="3" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>3</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="minimum_hitsinclusters" style="margin-top: 10px">Minimum hits in clusters: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Absolute minimum number of BLAST hits required to form a cluster">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="minimum_hitsinclusters" id="minimum_hitsinclusters" placeholder="3" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>3</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="decimals_st" style="margin-top: 10px">Summary Table decimals: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Number of decimal places to show in the summary table">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="decimals_st" id="decimals_st" placeholder="2" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>2</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="maximum_distance-container">
+        <label for="decimals_bt" style="margin-top: 10px">Binary Table decimals: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Number of decimal places to show in the binary table">❓</i></label>
+        <textarea type="number" class="materialize-textarea custom-textarea2" name="decimals_bt" id="decimals_bt" placeholder="2" pattern="\d*\.?\d+([eE][\-+]?\d+)?" required>2</textarea>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="key_function-container">
+        <label for="key_function" style="margin-top: -10px;">Key function: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Function used to score clusters (len=size, sum=total score, max=highest hit)">❓</i></label>
+        <br>
+        <br>
+        <select onchange="toggleDisability_kf();" name="key_function" id="key_function">
+            <option value="len">len</option>
+            <option value="sum">sum</option>
+            <option value="max">max</option>
+        </select>
+    </div>
+
+    <div class="input-field col s12 m8 offset-m2" style="margin-left: 20px; margin-top: 40px; margin-bottom: 40px;" id="hit_attribute-container">
+        <label for="hit_attribute" style="margin-top: -10px;">Hit attribute: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Attribute used to rank hits when scoring clusters">❓</i></label>
+        <br>
+        <br>
+        <select name="hit_attribute" id="hit_attribute">
+            <option value="identity">identity</option>
+            <option value="coverage">coverage</option>
+            <option value="bitscore">bitscore</option>
+            <option value="evalue">evalue</option>
+        </select>
+    </div>
+
+  </div>
+
+  <script>
+    // 1. Build config from Django context
+    const database_config = {
+      {% for option in database_options %}
+        "{{ option.value }}": {
+          "mode": "{{ option.mode }}",
+          "show_warning": {{ option.show_warning|lower }}
+        },
+      {% endfor %}
+    };
+
+    function updateCBlasterUI() {
+        const mode_select = document.getElementById("mode");
+        const database_select = document.getElementById("database");
+        const warning_div = document.getElementById("db-warning-message");
+
+        const selectedMode = mode_select.value;
+
+        // 2. Enable/Disable options based on Mode
+        for (let i = 0; i < database_select.options.length; i++) {
+            const option = database_select.options[i];
+            const dbInfo = database_config[option.value];
+
+            // If the DB's mode matches the selected tool mode, enable it
+            if (dbInfo && dbInfo.mode === selectedMode) {
+                option.disabled = false;
+            } else {
+                option.disabled = true;
+            }
+        }
+
+        // 3. Auto-select the first valid DB if the current one was just disabled
+        // This prevents the user from submitting a 'Local' DB while in 'Remote' mode
+        if (database_select.selectedOptions.length === 0 || database_select.selectedOptions[0].disabled) {
+            for (let i = 0; i < database_select.options.length; i++) {
+                if (!database_select.options[i].disabled) {
+                    database_select.value = database_select.options[i].value;
+                    break;
+                }
+            }
+        }
+
+        // 4. Update the Warning Message UI
+        const currentDbValue = database_select.value;
+        if (database_config[currentDbValue]?.show_warning) {
+            warning_div.style.display = "block";
+        } else {
+            warning_div.style.display = "none";
+        }
+    }
+
+    function loadExampleData() {
+        const exampleInput = document.getElementById("use_example_data");
+        if (exampleInput) {
+            exampleInput.value = "true";
+        }
+        const fileInput = document.getElementById("file");
+        if (fileInput) {
+            fileInput.value = "";
+        }
+        const fileNameDiv = document.getElementById("file-name");
+        if (fileNameDiv) {
+            fileNameDiv.textContent = "Selected file: Example Data (cblaster_example.fasta)";
+        }
+    }
+
+    function checkFields() {
+        const useExample = document.getElementById("use_example_data");
+        if (useExample && (useExample.value === "true" || useExample.value === "1")) {
+            return true;
+        }
+        const fileInput = document.getElementById("file");
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            alert("Please upload a file or click 'Load Example Data'.");
+            return false;
+        }
+        return true;
+    }
+  </script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+
+    updateCBlasterUI();
+
+    showFileUpload();
+
+{% endblock %}

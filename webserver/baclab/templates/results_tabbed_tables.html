@@ -1,0 +1,68 @@
+{% extends "results.html" %}
+
+{% block results %}
+<style>
+    .tabtbl-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; }
+    .tabtbl-tabs button { cursor: pointer; border: 1px solid var(--button-color, #005aa2); background: #fff; color: var(--button-color, #005aa2); padding: 6px 14px; border-radius: 4px; font-size: 0.95rem; }
+    .tabtbl-tabs button.active { background: var(--button-color, #005aa2); color: #fff; }
+    .tabtbl-tabs .count { opacity: 0.8; margin-left: 6px; font-size: 0.85rem; }
+    .tabtbl-description { color: #555; margin: 4px 0 12px; }
+</style>
+
+<div id="tabbedResults_div">
+    <div style="padding-left: 0; margin-left: 20px; margin-right: 20px;">
+        <h4>{{ pageTitle }}:</h4>
+
+        {% if tables|length > 1 %}
+        <div class="tabtbl-tabs" role="tablist">
+            {% for table in tables %}
+            <button type="button" role="tab" class="tabtbl-tab{% if forloop.first %} active{% endif %}" data-target="{{ table.id }}-panel">{{ table.title }}<span class="count">({{ table.hit_count }})</span></button>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% for table in tables %}
+        <div class="tabtbl-panel" id="{{ table.id }}-panel" role="tabpanel"{% if not forloop.first %} hidden{% endif %}>
+            <p class="tabtbl-description"><b>{{ table.title }}</b> - {{ table.description }} {{ table.hit_count }} hit{{ table.hit_count|pluralize }}.</p>
+            {% if table.html %}
+            <div style="max-height: 60vh; overflow: auto;">
+                {{ table.html|safe }}
+            </div>
+            {% else %}
+            <p>No hits.</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            var initialised = {};
+            function initTable(id) {
+                if (initialised[id] || !document.getElementById(id)) { return; }
+                initialised[id] = true;
+                new DataTable('#' + id, {
+                    language: { searchPlaceholder: 'Filter results' },
+                    layout: {
+                        topStart: 'search',
+                        bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                        topEnd: null,
+                        bottomEnd: 'pageLength'
+                    },
+                    pageLength: 25
+                });
+            }
+            // Tables are only initialised once visible, so DataTables can size their columns correctly.
+            initTable('{{ tables.0.id }}');
+            $('.tabtbl-tab').on('click', function() {
+                var target = $(this).data('target');
+                $('.tabtbl-tab').removeClass('active');
+                $(this).addClass('active');
+                $('.tabtbl-panel').attr('hidden', true);
+                $('#' + target).removeAttr('hidden');
+                initTable(target.replace('-panel', ''));
+            });
+        });
+    </script>
+</div>
+{% endblock results %}

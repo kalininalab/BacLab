@@ -1,0 +1,7 @@
+name: server_gtotree
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - gtotree==1.8.19

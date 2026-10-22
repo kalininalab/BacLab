@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% load citation_tags %}
+
+{% block content %}
+
+{% block toolJS %}
+
+{% endblock %}
+
+<style>
+    /* Compact file chooser for pages with more than one file input (the multi-genome tools): a small button
+       with the chosen file names next to it, instead of a full-width button. */
+    .compact-file-field { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; width: 100%; flex-wrap: wrap; }
+    .compact-file-field .btn, .compact-file-field .btn-small { flex-shrink: 0; }
+    .compact-file-name { color: #555; font-size: 0.85rem; }
+</style>
+
+<div class="col s12 m8 offset-m2">
+
+    <div class="col s12 m8 offset-m2" style="margin: 20px; margin-left: 50px;">
+        <h4 class="pagetitle">
+
+        {% block toolname %} {% endblock %}
+
+        </h4>
+        
+        <div class="tool-description" style="color: #666; margin-top: 10px; font-size: 1.1em;">
+            <p>{% block tool_description %}{{ tool.description }}{% endblock %}</p>
+            {% if tool_version %}<p style="font-size: 0.85rem; color: #888;">Installed version: {{ tool_version }}</p>{% endif %}
+        </div>
+
+    </div>
+
+    {% if missing_databases %}
+    <div class="card-panel orange lighten-4" style="margin: 20px 50px; width: 75%;">
+        <b>This tool is not ready yet:</b> the following database is not installed on this server &ndash; {{ missing_databases|join:"; " }}.
+        Jobs cannot be submitted until an administrator installs it.
+    </div>
+    {% endif %}
+
+    {% tool_citation job_type %}
+
+    <div class="col s12 m8 offset-m2 {% block hiddenStatusInputButtonsDiv %} {% endblock %}" style="margin: 20px; margin-left: 50px;" id="inputSelectionButtons">
+        <button class="btn" id="text-input-button" onclick="showInputText()">Text Input</button>
+        <button class="btn" id="file-upload-button" onclick="showFileUpload()">File Upload</button>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" onsubmit="return checkFields();">
+
+        {% csrf_token %}
+
+        <!-- Hidden input field for type -->
+        <input type="hidden" id="input-type" name="type" value="fasta">
+        <input type="hidden" id="use_example_data" name="use_example_data" value="false">
+
+        {% block text_input_container %}
+        <div class="input-field col s12 m8 offset-m2" style="margin-top:20px; width: 75%; margin-left: 50px; margin-right: 50px;" id="fasta-input-container">
+            <label for="fasta" style="margin-top: 10px; margin-bottom: 10px;">Input your fasta sequence</label>
+            <textarea id="fasta" name="fasta" class="materialize-textarea custom-textarea" rows="4" placeholder=">myfastainput &#x0a;MYLABMICROSERVICES"></textarea>
+        </div>
+        {% endblock %}
+
+        {% block file_upload_container %}
+        <div class="file-field input-field" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;" id="upload-input-container" hidden>
+            <div style="width: 100%; display: flex; gap: 10px; align-items: flex-start;">
+                <div class="file-field input-field" style="margin: 0;">
+                    <div class="btn btn-small" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;">
+                        <span>Upload file</span>
+                        <input id="file" type="file" name="file" accept="{% block accepted_files %} {% endblock %}" onchange="showFileName(this)">
+                    </div>
+                </div>
+                <div class="input-field" style="margin: 0;">
+                    <button type="button" class="btn btn-small waves-effect waves-light" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;" id="load-example-btn" onclick="loadExampleData()">Load Example Data</button>
+                </div>
+            </div>
+        </div>
+        <div id="file-name" style="margin: 20px; margin-left: 50px;"></div>
+        {% endblock %} 
+
+        {% block toolEntries %}
+        {% endblock %}
+
+        {% block exampleDataSection %}
+        {% if tool.example %}
+        <div class="col s12 m8 offset-m2" style="margin: 40px 50px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
+            <a href="{% url 'baclab:download_example_data' job_type %}" class="btn btn-small">Download Example Data</a>
+            <a href="{% url 'baclab:example_results' job_type %}" class="btn btn-small">View Example Results</a>
+        </div>
+        {% endif %}
+        {% endblock %}
+
+        {% if accepts_accessions %}
+        <div class="input-field col s12 m8 offset-m2" style="margin-top: 10px; width: 75%; margin-left: 50px; margin-right: 50px;">
+            <label for="accessions" class="active">Or fetch genomes from NCBI by assembly accession (optional, one per line, e.g. GCF_000005845.2)</label>
+            <textarea id="accessions" name="accessions" class="materialize-textarea" rows="2" placeholder="GCF_000005845.2"></textarea>
+        </div>
+        {% endif %}
+
+        <div class="input-field col s12 m8 offset-m2" style="margin-top: 10px; width: 75%; margin-left: 50px; margin-right: 50px;" id="email-input-container">
+            <label for="email" class="active">Email me when this job finishes (optional)</label>
+            <input id="email" type="email" name="email" placeholder="you@example.com" value="{{ request.user.email|default:'' }}">
+            {% if email_policy_hint %}<span class="helper-text">{{ email_policy_hint }}</span>{% endif %}
+        </div>
+
+        {% if accounts_enabled and user.is_authenticated %}
+        <div class="col s12 m8 offset-m2" style="margin: 8px 0 0 50px; width: 75%;">
+            <label><input type="checkbox" name="private"><span>Keep this run private (only you{% if user.profile.group %} and your group{% endif %} can open the results)</span></label>
+        </div>
+        {% endif %}
+
+        <br>
+        <div class="col s12 m8 offset-m2" id="submit-button-container">
+            <div style="width: 100%; display: flex; margin-left: 50px;">
+                <div class="file-field input-field" style="width: 50%">
+                    <input type="submit" value="Submit" class="btn" style="width: 100%" id="submitButton">
+                </div>
+            </div>
+        </div>
+
+        {% block toolSpecificChecks %}
+
+        {% endblock %}
+
+    </form>
+
+    <script>
+        // genomes named by NCBI accession count towards the minimum number of inputs
+        function accessionCount() {
+            var box = document.getElementById('accessions');
+            return box ? box.value.split(/[\s,;]+/).filter(Boolean).length : 0;
+        }
+
+        function showFileName(inputElement) {
+            if (inputElement.files && inputElement.files.length > 0) {
+                var label = inputElement.files.length > 1
+                    ? Array.from(inputElement.files).map(function(f) { return f.name; }).join(", ")
+                    : inputElement.files[0].name;
+                document.getElementById('file-name').textContent = "Selected file(s): " + label;
+                const exampleInput = document.getElementById('use_example_data');
+                if (exampleInput) {
+                    exampleInput.value = "false";
+                }
+            }
+        }
+
+        function loadExampleData() {
+            const exampleInput = document.getElementById('use_example_data');
+            if (exampleInput) {
+                exampleInput.value = "true";
+            }
+            const fileInput = document.getElementById('file');
+            if (fileInput) {
+                fileInput.value = "";
+            }
+            const fastaInput = document.getElementById('fasta');
+            if (fastaInput) {
+                fastaInput.value = "";
+            }
+            const fileNameDiv = document.getElementById('file-name');
+            if (fileNameDiv) {
+                fileNameDiv.textContent = "Selected file: Example Data";
+            }
+            if (typeof loadToolSpecificExampleData === 'function') {
+                loadToolSpecificExampleData();
+            }
+        }
+
+        function showInputText() {
+            highlightButton(document.getElementById('text-input-button'));
+            document.getElementById('fasta').value = "";
+            document.getElementById('fasta-input-container').hidden = false;
+            document.getElementById('file').value = "";
+            document.getElementById('upload-input-container').hidden = true;
+            document.getElementById('file-name').textContent = "";
+
+            document.getElementById('input-type').value = "fasta";
+            const exampleInput = document.getElementById('use_example_data');
+            if (exampleInput) {
+                exampleInput.value = "false";
+            }
+        }
+
+        function showFileUpload() {
+            highlightButton(document.getElementById('file-upload-button'));
+            document.getElementById('fasta').value = "";
+            document.getElementById('fasta-input-container').hidden = true;
+            document.getElementById('file').value = "";
+            document.getElementById('upload-input-container').hidden = false;
+            document.getElementById('file-name').textContent = "";
+
+            document.getElementById('input-type').value = "file";
+            const exampleInput = document.getElementById('use_example_data');
+            if (exampleInput) {
+                exampleInput.value = "false";
+            }
+        }
+
+        let lastClickedButton = null;
+
+        function highlightButton(button) {
+            if (lastClickedButton) {
+                lastClickedButton.classList.remove('highlight');
+            }
+            button.classList.add('highlight');
+            lastClickedButton = button;
+        }
+
+
+    </script>
+</div>
+
+{% endblock %}
+
+{% block windowonloadjstoolbase %}
+
+    highlightButton(document.getElementById('text-input-button'));
+
+    {% block windowonloadjstoolspecific %}
+
+    {% endblock %}
+
+{% endblock %}

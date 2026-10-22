@@ -1,0 +1,14 @@
+name: server_fastaai
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.10.22
+  - pip
+  - pip:
+      # FastAAI isn't on bioconda. pyhmmer must stay pinned below 0.9 - newer
+      # pyhmmer releases return str instead of bytes from hit/domain accessors,
+      # which crashes fastaai's own (buggy) exception handler in execute_search().
+      - pyrodigal==1.0.2
+      - pyhmmer==0.8.2
+      - fastaai==0.1.20

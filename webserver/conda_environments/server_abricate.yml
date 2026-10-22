@@ -1,0 +1,8 @@
+name: server_abricate
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+  - r
+dependencies:
+  - abricate==1.4.0

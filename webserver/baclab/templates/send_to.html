@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block css %}{% include "_job_styles.html" %}{% endblock css %}
+
+{% block content %}
+<div class="jobs-page">
+  <p><a href="{% url 'baclab:job_detail' job.job_id %}">&larr; back to the run</a></p>
+  <h4>Use the results of {% if job.label %}{{ job.label }}{% else %}{{ job.tool_label }}{% endif %} in another tool</h4>
+  {% if not options %}
+  <p class="muted">{% if has_files %}None of the result files fits the input of another tool.{% else %}This run has no result files (they may have been deleted).{% endif %}</p>
+  {% endif %}
+  {% for option in options %}
+  <form method="post" class="card" style="margin-bottom: 1rem;">
+    {% csrf_token %}
+    <input type="hidden" name="tool" value="{{ option.tool.name }}">
+    <h6>{{ option.tool.title }} <span class="muted">(needs {{ option.min }}{% if option.max != option.min %}&ndash;{{ option.max }}{% endif %} file{{ option.max|pluralize }})</span></h6>
+    {% for f in option.files %}
+    <p style="margin: 0.15rem 0;"><label><input type="checkbox" name="files" value="{{ f }}"{% if option.files|length <= option.max %} checked{% endif %}><span>{{ f }}</span></label></p>
+    {% endfor %}
+    <button type="submit" class="btn" style="margin-top: 0.6rem;">Start {{ option.tool.title }}</button>
+  </form>
+  {% endfor %}
+</div>
+{% endblock %}

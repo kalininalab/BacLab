@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<script type="text/javascript" src="{% static 'js/datatables.min.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="col s12 m8 offset-m2">
+    <div class="col s12 m8 offset-m2" style="margin: 20px; margin-left: 50px;">
+        <h4 class="pagetitle">
+            Taxonomy Database (GTDBTK)
+        </h4>
+
+        {% if TaxonomyTable %}
+            <div id="TaxonomyTable_div" class="">    
+                <div style="display: flex; justify-content: space-between;">
+                    <div style="width: 100%; margin-right: 20px;">
+                        <div style="padding-left: 0; margin-left: 20px;">
+                            <div style="height: 75vh; overflow: auto;">
+                                {{ TaxonomyTable|safe }}
+                            </div>
+                        </div>
+                        <script>
+                            $(document).ready(function() {
+                                const table = new DataTable('#TaxonomyTable', {
+                                    language: { searchPlaceholder: 'Filter taxonomy results' },
+                                    layout: {
+                                        topStart: 'search',
+                                        bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                                        topEnd: null,
+                                        bottomEnd: 'pageLength'
+                                    },
+                                    pageLength: 100
+                                });
+                            });
+                        </script>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

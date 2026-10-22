@@ -1,0 +1,13 @@
+{% if citations %}
+<div class="citation-box" style="margin: 20px 50px; padding: 12px 16px; background: #f5f5f5; border-left: 4px solid var(--primary-color, #005aa2); font-size: 0.85em; color: #444; max-width: 75%;">
+    <strong>Please cite:</strong>
+    <ul style="margin: 6px 0 0 18px; padding: 0;">
+        {% for c in citations %}
+        <li style="margin-bottom: 4px;">
+            {{ c.text }}
+            {% if c.url %} <a href="{{ c.url }}" target="_blank" rel="noopener">[link]</a>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}

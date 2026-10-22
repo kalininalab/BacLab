@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} Bioinformatics Micro Services {% endblock %}
+
+{% block content %}
+<style>
+    #input-list li {
+        margin-left: 1em;
+        padding-left: 1em;
+        list-style-type: disc !important;
+    }
+
+    .bld {
+        font-weight: 600;
+    }
+
+    .true-list {
+        padding-left: revert !important;
+    }
+
+    .true-list li {
+        list-style-type: disc !important;
+    }
+
+    .mut-ex {
+        font-variant: small-caps;
+    }
+
+    .collapsible-header .mut-ex {
+        margin: 0 0.4rem;
+    }
+
+    .collapsible-body {
+        text-align: justify;
+    }
+
+    .custom-header {
+        font-size: 1.4rem;
+        font-weight: bold;
+    }
+
+    .category-heading {
+        margin-top: 2rem;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 2px solid var(--primary-color, #6366f1);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--primary-color, #6366f1);
+    }
+
+    .tool-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0 2rem;
+    }
+
+    .tool-category-card {
+        background-color: var(--bg-color, #f8fafc);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-left: 4px solid var(--primary-color, #6366f1);
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .tool-category-card .category-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-color, #334155);
+        margin-bottom: 0.75rem;
+    }
+
+    .tool-category-card .cat-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.6rem;
+        height: 1.6rem;
+        padding: 0 0.35rem;
+        border-radius: 50%;
+        background-color: var(--primary-color, #6366f1);
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .category-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .tool-pill {
+        display: inline-block;
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        background-color: var(--button-color, #6366f1);
+        color: #ffffff !important;
+        font-size: 0.82rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .tool-pill:hover {
+        background-color: var(--secondary-color, #4f46e5);
+        transform: translateY(-1px);
+    }
+
+</style>
+
+<div class="container">
+  <!-- <center>
+      <div><img src="{% static 'img/structman_logo_big.png' %}" width="50%" style="padding-top: 20px"></div>
+  </center> -->
+
+    <p>
+    This server lets users run BLAST searches against in‑house databases, annotate genomes with Prokka, Bakta, and antiSMASH, and analyze gene clusters with cblaster.
+    </p>
+
+    <div class="tool-picker-grid">
+        {% if dyn_tools.qc %}
+        <div class="tool-category-card">
+            <div class="category-title"><span class="cat-number">01</span>Quality Control &amp; Assembly</div>
+            <div class="category-tools">
+                {% for t in dyn_tools.qc %}<a class="tool-pill" href="{{ t.url }}">{{ t.title }}</a>{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if dyn_tools.amr %}
+        <div class="tool-category-card">
+            <div class="category-title"><span class="cat-number">02</span>AMR, Virulence &amp; Mobile Elements</div>
+            <div class="category-tools">
+                {% for t in dyn_tools.amr %}<a class="tool-pill" href="{{ t.url }}">{{ t.title }}</a>{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if dyn_tools.strain %}
+        <div class="tool-category-card">
+            <div class="category-title"><span class="cat-number">03</span>Strain Typing &amp; Taxonomy</div>
+            <div class="category-tools">
+                {% for t in dyn_tools.strain %}<a class="tool-pill" href="{{ t.url }}">{{ t.title }}</a>{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if dyn_tools.compgen %}
+        <div class="tool-category-card">
+            <div class="category-title"><span class="cat-number">04</span>Comparative Genomics</div>
+            <div class="category-tools">
+                {% for t in dyn_tools.compgen %}<a class="tool-pill" href="{{ t.url }}">{{ t.title }}</a>{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if dyn_tools.annot %}
+        <div class="tool-category-card">
+            <div class="category-title"><span class="cat-number">05</span>Annotation &amp; Biosynthetic Gene Clusters</div>
+            <div class="category-tools">
+                {% for t in dyn_tools.annot %}<a class="tool-pill" href="{{ t.url }}">{{ t.title }}</a>{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if dyn_tools.search %}
+        <div class="tool-category-card">
+            <div class="category-title"><span class="cat-number">06</span>Sequence Search</div>
+            <div class="category-tools">
+                {% for t in dyn_tools.search %}<a class="tool-pill" href="{{ t.url }}">{{ t.title }}</a>{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <h6 style="color: red;"> <b>
+        Important: The results are kept in our servers for 30 days. Please download the results in order to store them longer.
+        </b>
+    </h6>
+
+  <p id="mobile_warning" class="red-text text-darken-3" style="display: none">
+      <b></b>
+  </p>
+
+  <script>
+
+      function isMobileDevice() {
+          return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      }
+
+      if (isMobileDevice() || window.innerWidth <= 768) {
+          document.getElementById('mobile_warning').style.display = 'block';
+      }
+
+  </script>
+
+    <p>
+        <h5> Server status:  </h5>
+
+        {% if use_db_stats %}
+            <div style="margin: 1rem 0; padding: 1rem; background-color: #f5f5f5; border-radius: 4px;">
+                <h6 style="margin-top: 0;"><b>Job Queue Status</b></h6>
+                <p style="margin: 0.5rem 0;">
+                    <span style="display: inline-block; margin-right: 2rem;">
+                        <b>Running:</b> {{ running_jobs }}
+                    </span>
+                    <span style="display: inline-block; margin-right: 2rem;">
+                        <b>Queued:</b> {{ queued_jobs }}
+                    </span>
+                    <span style="display: inline-block; margin-right: 2rem;">
+                        <b>Finished:</b> {{ finished_jobs }}
+                    </span>
+                    <span style="display: inline-block;">
+                        <b>Failed:</b> {{ failed_jobs }}
+                    </span>
+                </p>
+                <p style="margin: 0.5rem 0;"><b>Total jobs submitted:</b> {{ total_jobs }}</p>
+            </div>
+
+            {% if job_types_stats %}
+                <div style="margin: 1rem 0; padding: 1rem; background-color: #fafafa; border-radius: 4px;">
+                    <h6 style="margin-top: 0;"><b>Computation Time by Job Type</b></h6>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #ddd;">
+                                <th style="text-align: left; padding: 0.5rem; font-weight: bold;">Job Type</th>
+                                <th style="text-align: center; padding: 0.5rem; font-weight: bold;">Total Jobs</th>
+                                <th style="text-align: center; padding: 0.5rem; font-weight: bold;">Finished</th>
+                                <th style="text-align: right; padding: 0.5rem; font-weight: bold;">Total Time</th>
+                                <th style="text-align: right; padding: 0.5rem; font-weight: bold;">Avg Time/Job</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in job_types_stats %}
+                                <tr style="border-bottom: 1px solid #eee;">
+                                    <td style="text-align: left; padding: 0.5rem;">{{ stat.job_type }}</td>
+                                    <td style="text-align: center; padding: 0.5rem;">{{ stat.count }}</td>
+                                    <td style="text-align: center; padding: 0.5rem;">{{ stat.finished_count }}</td>
+                                    <td style="text-align: right; padding: 0.5rem;">
+                                        {% if stat.total_duration %}
+                                            {{ stat.total_duration }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                    <td style="text-align: right; padding: 0.5rem;">
+                                        {% if stat.avg_duration %}
+                                            {{ stat.avg_duration }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        {% else %}
+            {# Fallback to legacy display #}
+            <h6> Running jobs: {{ runningJobs }} </h6>
+            <h6> Queued jobs: {{ queuedJobs }} </h6>
+            <h6> Jobs processed: {{ jobsProcessed }} </h6>
+        {% endif %}
+    </p>
+
+    <p style="margin-top: 1.5rem;"><a class="btn" href="{% url 'baclab:guides' %}">How to use the tools</a></p>
+
+</div>
+
+{% endblock content %}
+

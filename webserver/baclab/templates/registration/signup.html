@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-section" style="margin: 20px; max-width: 480px;">
+  <h4>Create an account</h4>
+  <p>An account lets you see your previous jobs. An administrator can add you to a group so you and your colleagues see each other's jobs.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn">Create account</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+name: server_basalt
+
+# Canonical channel names keep this file portable. The China-mainland installer
+# renders temporary mirror URLs and never modifies the user's global .condarc.
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+
+dependencies:
+  - python==3.12.15
+
+  # Core bioinformatics command-line tools
+  - megahit==1.2.9
+  - metabat2==2.18_23_gc869c52
+  - maxbin2==2.2.7
+  - concoct==1.1.0
+  - prodigal==2.6.3
+  - semibin==2.5.0
+  - bedtools==2.31.1
+  - blast==2.17.0
+  - bowtie2==2.5.5
+  - bwa==0.7.19
+  - diamond==2.2.8
+  - checkm2==1.1.0
+  - unicycler==0.5.1
+  - spades==4.3.0
+  - samtools==1.24
+  - racon==1.5.0
+  - pplacer==1.1.alpha19
+  - minimap2==2.31
+  - miniasm==0.3
+  - idba==1.1.3
+  - hmmer==3.4
+  - entrez-direct==26.0
+  - unzip==6.0
+
+  # Python runtime. Keep the scientific stack in the Conda transaction so a
+  # second package manager cannot replace it with incompatible GPU wheels.
+  - biopython==1.88
+  - pytorch==2.4.1=cpu_generic*
+  - nomkl==1.0
+  - tensorboardx==2.6.2.2
+  - scikit-learn==1.9.1
+  - numpy==1.26.4
+  - scipy==1.17.1
+  - pandas==2.3.3
+  - matplotlib-base==3.10.9
+  - pillow==13.0.0
+  - joblib==1.6.0
+  - tqdm==4.70.1
+  - requests==2.34.2
+  - huggingface_hub==2.2.0
+
+  # install.sh clones the BASALT release with git
+  - git==2.55.0

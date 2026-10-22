@@ -1,0 +1,46 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+<div class="module" style="margin-bottom: 20px;">
+  <table style="width:100%"><caption>Platform</caption>
+    <tr><th scope="row"><a href="{% url 'admin:system_status' %}">System status</a></th>
+        <td>Version, tools and which reference databases are installed</td></tr>
+    <tr><th scope="row"><a href="{% url 'admin:monitor' %}">Live monitor</a></th>
+        <td>CPU, memory, GPU, storage and running jobs, live</td></tr>
+    <tr><th scope="row"><a href="{% url 'admin:usage' %}">Usage</a></th>
+        <td>Jobs and compute hours per user, group and tool, by month (CSV export)</td></tr>
+    <tr><th scope="row"><a href="{% url 'admin:baclab_customtool_add' %}">Add a tool</a></th>
+        <td>Create a new tool from a script, without programming</td></tr>
+    <tr><th scope="row"><a href="{% url 'admin:baclab_toolsetting_changelist' %}">Tool switches</a></th>
+        <td>Show or hide a tool for users, immediately</td></tr>
+  </table>
+</div>
+
+<div class="module" style="margin-bottom: 20px;">
+  <details>
+    <summary style="cursor:pointer; padding: 8px 10px; font-weight: 600;">Quick tips (full guide: docs/ADMIN_GUIDE.md in the BacLab folder)</summary>
+    <div style="padding: 4px 14px 10px; line-height: 1.5;">
+      <p><b>On the server</b> (in the BacLab folder):
+        <code>./baclab update</code> new version, data is kept and a database backup is made &middot;
+        <code>./baclab status</code> &middot; <code>./baclab logs -f django</code> &middot; <code>./baclab backup</code> &middot;
+        <code>./baclab restart</code> after editing <code>webserver/.envs/.production/.django</code>.</p>
+      <p><b>A tool says its database is missing?</b> <code>./baclab db status</code> shows what is missing, <code>./baclab db install</code> installs it
+         (<code>./baclab db install padloc gtdbtk</code> for chosen ones). Downloads can be large.</p>
+      <p><b>Hide or show a tool:</b> <a href="{% url 'admin:baclab_toolsetting_changelist' %}">Tool switches</a> &mdash; add a row with the tool key (e.g. <code>padloc</code>) and untick <i>enabled</i>.
+         BASALT is off by default (needs 128&nbsp;GB RAM).</p>
+      <p><b>Add a tool without programming:</b> <a href="{% url 'admin:baclab_customtool_add' %}">Custom tools &rarr; Add</a>. Write a bash script (it gets
+         <code>$INPUT_DIR</code>, <code>$OUTPUT_DIR</code>, <code>$CORES_PER_JOB</code>, <code>$PARAM_&lt;NAME&gt;</code>), optionally a conda environment, save, run
+         <i>Build the conda environment</i> from the list, then tick <i>enabled</i>. Scripts run on the server &mdash; only trusted administrators should have this permission.</p>
+      <p><b>User accounts (optional):</b> add users under <i>Users</i> and put them in a group via <a href="{% url 'admin:baclab_labgroup_changelist' %}">User groups</a> &mdash; group members see each other's runs on the "my jobs" page. Nobody needs an account to use the tools. Switch accounts off with <code>ACCOUNTS_ENABLED=False</code>, allow self-registration with <code>ALLOW_SIGNUP=True</code>.</p>
+      <p><b>Limit notification e-mail addresses:</b> <a href="{% url 'admin:baclab_emailpolicy_changelist' %}">E-mail policy</a> &mdash; one regular expression per line for the part after the @ (e.g. <code>example\.org</code> or <code>.*\.edu</code>). Empty = any address.</p>
+      <p><b>Edit the e-mails users get:</b> <a href="{% url 'admin:baclab_emailmessages_changelist' %}">E-mail messages</a> &mdash; subject and text of the "job finished", "job failed" and "results will be deleted" messages, with placeholders such as <code>{job_id}</code>; leave a text empty for the default. Type an address under <i>Send a test to</i> and save to receive a sample of each message (local mode: it appears in the server log).</p>
+      <p><b>Fair use and monitoring:</b> <a href="{% url 'admin:baclab_sitelimits_changelist' %}">Job limits</a> cap simultaneous jobs per user/group;
+         <a href="{% url 'admin:monitor' %}">Live monitor</a> shows CPU, memory, GPU and storage in real time; <a href="{% url 'admin:system_status' %}">System status</a> shows disks, workers and queues; <a href="{% url 'admin:usage' %}">Usage</a> gives hours per user/group/tool.
+         Stuck jobs and full disks are e-mailed to you (and to chat with <code>NOTIFY_WEBHOOK_URL</code>).</p>
+      <p><b>A job is stuck:</b> Job records &rarr; select &rarr; <i>Mark selected as failed</i>. Error details are in the job's <i>Errors</i> section.</p>
+      <p><b>Users' e-mail, results kept for 30 days, cores per job:</b> <code>webserver/.envs/.production/.django</code>.</p>
+    </div>
+  </details>
+</div>
+{{ block.super }}
+{% endblock %}

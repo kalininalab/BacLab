@@ -1,0 +1,73 @@
+{% extends "results.html" %}
+{% load static %}
+
+{% block results_css %}
+<script type="text/javascript" src="{% static 'js/d3.v3.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/phylotree.css' %}">
+<script type="text/javascript" src="{% static 'js/phylotree.js' %}"></script>
+
+<style>
+    #tree_display {
+        width: 100%;
+        min-height: 600px;
+    }
+    .tree-selection-brush .extent { fill-opacity: .05; stroke: #fff; }
+    .node { font-size: 11px; cursor: pointer; }
+    .branch { fill: none; stroke: #999; stroke-width: 2px; }
+    .node-label { fill: #333; font-weight: bold; }
+</style>
+{% endblock %}
+
+{% block results %}
+<div id="Gubbins_Results_div">
+    <div style="display: flex; justify-content: flex-start;">
+        <div style="width: 90%;">
+            <div style="padding-left: 0; margin-left: 20px; margin-right: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h4>Recombination-Filtered Tree:</h4>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="changeLayout('linear')">Linear</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="changeLayout('radial')">Radial</button>
+                    </div>
+                </div>
+                <p style="color:#666;">Gubbins masks recombinant regions before this tree is built, so branch lengths reflect point mutations only. The full recombination report (GFF) is included in the downloadable results.</p>
+
+                {% if phylogeneticTreeData %}
+                <div style="max-height: auto; overflow: auto; border: 1px solid var(--primary-color, #005aa2); background: #f9f9f9;">
+                    <svg id="tree_display"></svg>
+                </div>
+                {% else %}
+                <p>No filtered tree found - click Download results to inspect the raw Gubbins output.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var newick = `{{ phylogeneticTreeData|safe }}`;
+
+    var tree = d3.layout.phylotree()
+        .svg(d3.select("#tree_display"))
+        .options({ 'selectable': true, 'collapsible': true, 'transitions': true });
+
+    function renderTree() {
+        if (newick && newick !== "None") {
+            d3.select("#tree_display").selectAll("*").remove();
+            tree = d3.layout.phylotree()
+                .svg(d3.select("#tree_display"))
+                .options({ 'selectable': true, 'collapsible': true });
+            tree(newick).layout();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        renderTree();
+    });
+
+    function changeLayout(mode) {
+        var is_radial = (mode === 'radial');
+        tree.radial(is_radial).placenodes().update();
+    }
+</script>
+{% endblock results %}

@@ -1,0 +1,8 @@
+{% extends "results.html" %}
+
+{% block results %}
+<div style="width: 100%; margin-top: 20px; padding-right: 20px;">
+    <h4 style="margin-left: 0;">{{ reportTitle }}</h4>
+    <iframe src="{{ reportUrl }}" style="width: 100%; height: calc(100vh - 265px); border: 1px solid #ddd;"></iframe>
+</div>
+{% endblock results %}

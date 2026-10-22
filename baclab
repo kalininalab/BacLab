@@ -1,0 +1,651 @@
+#!/usr/bin/env python3
+"""baclab - install, update and look after a BacLab server.
+
+    ./baclab install            first-time setup (settings, containers, admin account)
+    ./baclab update             back up, pull the new version, rebuild, restart, check the databases
+    ./baclab status             containers, version, installed databases
+    ./baclab db status|install|test   reference databases (see `./baclab db --help`)
+    ./baclab selftest [--run]   check environments/databases (and run the example jobs) inside the containers
+    ./baclab backup|restore     PostgreSQL dump to / from backups/
+    ./baclab start|stop|restart|logs|shell
+
+Runs on the server itself (outside the containers) with the python3 that every Linux has - standard library only,
+Python 3.6+. Your data lives in data/, databases/, backups/ and the container volumes; an update never touches it.
+"""
+import argparse
+import getpass
+import glob
+import importlib.util
+import os
+import re
+import secrets
+import shutil
+import socket
+import subprocess
+import sys
+import time
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+WEBSERVER = os.path.join(ROOT, 'webserver')
+STATE_FILE = os.path.join(ROOT, '.baclab')          # mode chosen at install: production or local
+LEGACY_STATE_FILE = os.path.join(ROOT, '.labmate')  # the same file under the name of an installation made before the project was renamed BacLab
+ENVS = os.path.join(WEBSERVER, '.envs')
+COMPOSE_ENV = os.path.join(WEBSERVER, '.env')
+DATABASES = os.path.join(ROOT, 'databases')
+BACKUPS = os.path.join(ROOT, 'backups')
+
+BOLD, RED, GREEN, YELLOW, RESET = ('\033[1m', '\033[31m', '\033[32m', '\033[33m', '\033[0m') if sys.stdout.isatty() else ('',) * 5
+
+
+def say(text='', colour=''):
+    print(f'{colour}{text}{RESET if colour else ""}', flush=True)
+
+
+def die(text):
+    say(f'ERROR: {text}', RED)
+    sys.exit(1)
+
+
+def ask(question, default=None, secret=False, yes=False):
+    """Prompt; with --yes (or no terminal) the default is taken."""
+    if yes or not sys.stdin.isatty():
+        if default is None:
+            die(f'"{question}" needs an answer, but this run is not interactive.')
+        return default
+    shown = f' [{default}]' if default not in (None, '') and not secret else ''
+    reader = getpass.getpass if secret else input
+    answer = reader(f'{question}{shown}: ').strip()
+    return answer or (default if default is not None else '')
+
+
+def confirm(question, default=True, yes=False):
+    if yes or not sys.stdin.isatty():
+        return default
+    answer = input(f'{question} {"(Y/n)" if default else "(y/N)"}: ').strip().lower()
+    return default if not answer else answer.startswith('y')
+
+
+def run(command, cwd=ROOT, check=True, capture=False, env=None, stdin=None):
+    kwargs = {'cwd': cwd, 'env': env, 'stdin': stdin}
+    if capture:
+        kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    result = subprocess.run(command, **kwargs)
+    if check and result.returncode != 0:
+        die(f'command failed ({result.returncode}): {" ".join(command)}' + (f'\n{result.stderr}' if capture and result.stderr else ''))
+    return result
+
+
+# ---------------------------------------------------------------- container engine
+def compose_command():
+    """The compose program of this machine as an argument list."""
+    if shutil.which('podman-compose'):
+        return ['podman-compose']
+    if shutil.which('docker'):
+        if subprocess.call(['docker', 'compose', 'version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+            return ['docker', 'compose']
+    if shutil.which('docker-compose'):
+        return ['docker-compose']
+    die('Neither podman-compose, "docker compose" nor docker-compose was found. Install Docker (or Podman and podman-compose) first.')
+
+
+def read_mode():
+    if not os.path.exists(STATE_FILE) and os.path.exists(LEGACY_STATE_FILE):
+        os.rename(LEGACY_STATE_FILE, STATE_FILE)
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE) as handle:
+            mode = handle.read().strip()
+        if mode in ('production', 'local'):
+            return mode
+    return None
+
+
+def compose_file(mode):
+    return 'production.yml' if mode == 'production' else 'local.yml'
+
+
+class Stack:
+    """The compose project of this installation."""
+
+    def __init__(self, mode=None):
+        self.mode = mode or read_mode()
+        if not self.mode:
+            die('BacLab is not installed here yet. Run:  ./baclab install')
+        self.base = compose_command() + ['-f', compose_file(self.mode)]
+
+    def cmd(self, *args, **kwargs):
+        return run(self.base + list(args), cwd=WEBSERVER, **kwargs)
+
+    def running(self, service):
+        """Is the service's container up? (Asked by running a no-op in it: `ps -q <service>` is not supported by podman-compose.)"""
+        return self.cmd('exec', '-T', service, 'true', check=False, capture=True).returncode == 0
+
+    def exec(self, service, *command, **kwargs):
+        flags = [] if sys.stdin.isatty() else ['-T']
+        return self.cmd('exec', *flags, service, *command, **kwargs)
+
+    def manage(self, service, *args, **kwargs):
+        """manage.py inside a running container. /entrypoint builds DATABASE_URL & co. from the settings files first."""
+        return self.exec(service, '/entrypoint', 'python', 'manage.py', *args, **kwargs)
+
+    def tools(self, bash_command, check=True):
+        """Run bash in the throw-away `dbtools` container: the app image with /databases writable."""
+        bash_command = 'export PATH=/app/tools/_bin:$PATH; ' + bash_command   # baclab-fetch & co. come with the code, not the image
+        flags = ['--rm'] + ([] if sys.stdin.isatty() else ['-T'])
+        return run(self.base[:-2] + ['--profile', 'tools', '-f', compose_file(self.mode), 'run'] + flags + ['dbtools', 'bash', '-c', bash_command],
+                   cwd=WEBSERVER, check=check)
+
+
+# ---------------------------------------------------------------- settings files
+def render(template_path, values):
+    with open(template_path) as handle:
+        text = handle.read()
+    for key, value in values.items():
+        text = text.replace(f'@{key}@', str(value))
+    left = re.findall(r'@[A-Z_]+@', text)
+    if left:
+        die(f'{template_path}: unfilled placeholders {left}')
+    return text
+
+
+def memory_gb():
+    try:
+        with open('/proc/meminfo') as handle:
+            for line in handle:
+                if line.startswith('MemTotal:'):
+                    return int(line.split()[1]) / 1024.0 / 1024.0
+    except OSError:
+        pass
+    return 16.0
+
+
+def rootless_podman():
+    """Rootless podman cannot publish ports below 1024."""
+    return bool(shutil.which('podman-compose')) and hasattr(os, 'geteuid') and os.geteuid() != 0
+
+
+def on_network_filesystem():
+    """True on NFS, Lustre, GPFS and the like, where `:z` volume labels do not work."""
+    try:
+        kind = subprocess.run(['stat', '-f', '-c', '%T', ROOT], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True).stdout.strip().lower()
+    except OSError:
+        return False
+    return kind.startswith(('nfs', 'lustre', 'gpfs', 'cifs', 'smb', 'ceph', 'beegfs', 'panfs', 'fuse'))
+
+
+def write_private(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w') as handle:
+        handle.write(text)
+    os.chmod(path, 0o600)
+
+
+def host_guess():
+    try:
+        return socket.gethostbyname(socket.gethostname())
+    except OSError:
+        return 'localhost'
+
+
+DATA_DIRS = ('data', 'data/uploads', 'data/downloads', 'data/results', 'data/custom_tools', 'data/custom_envs')
+
+
+def ensure_data_dirs():
+    """The app containers run as an unprivileged user that is not the owner of data/ on the host (rootless podman maps it to
+    another uid, Docker uses a fixed one), so these folders must be writable for everybody. Only the folders themselves:
+    what the jobs write into them is owned by the container user."""
+    for directory in DATA_DIRS + ('backups',):
+        path = os.path.join(ROOT, directory)
+        os.makedirs(path, exist_ok=True)
+        if directory != 'backups':
+            try:
+                os.chmod(path, 0o777)
+            except OSError:
+                say(f'Could not make {path} writable for the containers (owned by another user?). Run: chmod 777 {path}', YELLOW)
+
+
+# Folders under databases/ that the worker writes to (databases and strains administrators add in the admin)
+WRITABLE_DATABASE_DIRS = ('BlastDB', 'CblasterDB', 'GenomeMiningDB', 'PhylogenyDB', 'PhylogeneticTree', 'StrainsDB', 'AnnotationDB', 'AntismashResults')
+
+
+def ensure_database_dirs():
+    """The application containers run as an unprivileged user that does not own databases/ on the host: let it write where the admin
+    features need it (and only there; the tools' own databases stay read-only for it)."""
+    os.makedirs(DATABASES, exist_ok=True)
+    for name in WRITABLE_DATABASE_DIRS:
+        path = os.path.join(DATABASES, name)
+        os.makedirs(path, exist_ok=True)
+        try:
+            os.chmod(path, 0o777)
+            for entry in os.listdir(path):   # the option lists the admin features keep up to date
+                if entry.endswith('.json'):
+                    os.chmod(os.path.join(path, entry), 0o666)
+        except OSError:
+            say(f'Could not make {path} writable for the containers (owned by another user?). Run: chmod a+rwx {path}', YELLOW)
+
+
+# ---------------------------------------------------------------- install
+def cmd_install(args):
+    say('BacLab installation', BOLD)
+    existing = read_mode()
+    if existing and not args.force:
+        die(f'Already installed ({existing} mode). Use "./baclab update" to update, or "./baclab install --force" to redo the questions '
+            '(existing settings files are kept unless you say otherwise).')
+    compose_command()   # fails early with a clear message
+    if sys.version_info < (3, 6):
+        die('python3.6 or newer is needed')
+
+    mode = args.mode or ('local' if args.local else None)
+    if not mode:
+        mode = 'production' if ask('Install for 1) local testing or 2) production?', '2', yes=args.yes) == '2' else 'local'
+    prod = mode == 'production'
+
+    ensure_data_dirs()
+    ensure_database_dirs()
+    os.makedirs(os.path.join(ROOT, 'certs'), exist_ok=True)
+
+    folder = 'production' if prod else 'local'
+    https, port = False, '80' if prod else '8000'
+    django_env, postgres_env = os.path.join(ENVS, f'.{folder}', '.django'), os.path.join(ENVS, f'.{folder}', '.postgres')
+    if os.path.exists(django_env) and not confirm(f'{django_env} exists. Overwrite it (this asks for the admin account again)?', False, args.yes):
+        say('Keeping the existing settings files.')
+    else:
+        admin_email = ask('Administrator e-mail (failure reports go here; shown to users as contact)', 'admin@example.com', yes=args.yes)
+        admin_user = ask('Administrator user name', 'admin', yes=args.yes)
+        if sys.stdin.isatty() and not args.yes:
+            admin_pass = ask('Administrator password (min. 8 characters)', None, secret=True)
+            while len(admin_pass) < 8:
+                admin_pass = ask('Too short - administrator password (min. 8 characters)', None, secret=True)
+        else:
+            admin_pass = secrets.token_urlsafe(12)
+            say(f'Generated administrator password: {admin_pass}   (also stored in {os.path.join(ENVS, "." + folder, ".django")})', YELLOW)
+        hosts = ask('Host name or IP address the site will be reached under', host_guess(), yes=args.yes)
+        https = prod and os.path.exists(os.path.join(ROOT, 'certs', 'fullchain.pem'))
+        rootless = rootless_podman()
+        default_port = ('8443' if rootless else '443') if https else (('8080' if rootless else '80') if prod else '8000')
+        port = ask('HTTPS port' if https else 'HTTP port nginx is published on', default_port, yes=args.yes)
+        cores = max(1, (os.cpu_count() or 4) // 4)
+        write_private(django_env, render(os.path.join(WEBSERVER, 'envs.example', f'{folder}.django.example'), {
+            'SECRET_KEY': secrets.token_urlsafe(50), 'ALLOWED_HOSTS': f'{hosts},localhost,127.0.0.1', 'SSL_REDIRECT': str(https),
+            'WEBSITE_LINK': f'{"https" if https else "http"}://{hosts}{"" if port in ("80", "443") else ":" + port}/',
+            'FLOWER_USER': secrets.token_hex(8), 'FLOWER_PASSWORD': secrets.token_urlsafe(24),
+            'ADMIN_USER': admin_user, 'ADMIN_PASS': admin_pass, 'ADMIN_EMAIL': admin_email, 'SENDER_EMAIL': admin_email,
+            'CORES_PER_JOB': cores}))
+        write_private(postgres_env, render(os.path.join(WEBSERVER, 'envs.example', f'{folder}.postgres.example'), {
+            'POSTGRES_USER': 'baclab_' + secrets.token_hex(4), 'POSTGRES_PASSWORD': secrets.token_urlsafe(24)}))
+        say(f'Wrote {django_env} and {postgres_env} (readable by you only).', GREEN)
+
+    cpus = os.cpu_count() or 4
+    wanted = render(os.path.join(WEBSERVER, 'envs.example', 'compose.env.example'), {
+        'WORKER_CPUS': cpus, 'WORKER_MEMORY': f'{max(4, int(memory_gb() * 0.8))}GB', 'CONCURRENCY': max(1, min(4, cpus // 8)),
+        'HTTP_PORT': port if prod and not https else ('8080' if rootless_podman() else '80'), 'HTTPS_PORT': port if https else ('8443' if rootless_podman() else '443')})
+    have = open(COMPOSE_ENV).read() if os.path.exists(COMPOSE_ENV) else ''
+    if on_network_filesystem():   # SELinux relabelling (:z) is refused there; keys that are already set are kept (see below)
+        wanted += '\nDATA_MODE=rw\nDB_MODE=ro\nDB_WRITE_MODE=rw\nDB_WORKER_MODE=rw\n'
+        if 'DB_WORKER_MODE' not in have:
+            say('This folder is on a network file system: mounting the data folders without SELinux relabelling (DATA_MODE/DB_MODE in webserver/.env).', YELLOW)
+    present = {line.split('=')[0] for line in have.splitlines() if '=' in line and not line.startswith('#')}
+    missing = [line for line in wanted.splitlines() if '=' in line and not line.startswith('#') and line.split('=')[0] not in present]
+    if missing:   # never overwrite what an administrator set
+        write_private(COMPOSE_ENV, have + ('\n' if have and not have.endswith('\n') else '') + '# added by ./baclab install\n' + '\n'.join(missing) + '\n')
+        say(f'Wrote sizing to {COMPOSE_ENV} ({cpus} cores, {memory_gb():.0f} GB RAM on this machine).', GREEN)
+
+    with open(STATE_FILE, 'w') as handle:
+        handle.write(mode + '\n')
+
+    if args.no_start:
+        say(f'\nSettings written ({mode} mode). Build and start with:  ./baclab update --no-pull', GREEN)
+        return
+    stack = Stack(mode)
+    say('\nBuilding the images. The conda environments of all tools are built once: this takes a while (often 1-3 hours).', BOLD)
+    build(stack)
+    start(stack)
+    say('\nBacLab is running.', GREEN)
+    say(f'  Site:   see WEBSITE_LINK in {django_env}')
+    say('  Admin:  <site>/admin/   (log in with the account you just chose)')
+    say('\nNext: install the databases the tools need:  ./baclab db status   and   ./baclab db install <key>')
+    if confirm('Look at the databases now?', True, args.yes):
+        db_status(Stack(mode), show_hint=True)
+
+
+def build(stack):
+    """Build the app image first: the nginx image is built FROM it (and takes the static files out of it)."""
+    stack.cmd('build', 'django')
+    stack.cmd('build')
+
+
+def app_services(stack):
+    """The application containers (everything except the database and redis)."""
+    return ['django', 'celeryworker', 'celeryworker_light', 'celerybeat'] + (['nginx'] if stack.mode == 'production' else [])
+
+
+def start(stack):
+    stack.cmd('up', '-d')
+    # podman-compose keeps running containers even when their image was rebuilt: recreate the application containers so an update
+    # really runs the new code (the database and redis are never recreated). Docker compose would do the same on its own.
+    stack.cmd('up', '-d', '--force-recreate', '--no-deps', *app_services(stack))
+    say('Waiting for the web application to come up (database migrations run first)...')
+    deadline = time.time() + 300
+    while time.time() < deadline:
+        if stack.running('django') and stack.manage('django', 'migrate', '--check', check=False, capture=True).returncode == 0:
+            say('Application is up, all database migrations are applied.', GREEN)
+            return
+        time.sleep(5)
+    say('The application did not report ready within 5 minutes. Look at:  ./baclab logs django', YELLOW)
+
+
+# ---------------------------------------------------------------- update
+def git_state():
+    if not os.path.isdir(os.path.join(ROOT, '.git')) or not shutil.which('git'):
+        return None
+    return True
+
+
+def cmd_update(args):
+    stack = Stack()
+    say(f'Updating BacLab ({stack.mode} mode)', BOLD)
+    ensure_data_dirs()
+    ensure_database_dirs()
+    os.makedirs(os.path.join(ROOT, 'certs'), exist_ok=True)   # bind-mounted by production.yml: must exist
+    if not args.no_pull and git_state():
+        dirty = run(['git', 'status', '--porcelain', '--untracked-files=no'], capture=True).stdout.strip()
+        if dirty:
+            say('Files of the program were changed on this server:', YELLOW)
+            say(dirty)
+            if not confirm('Pull anyway (git will refuse if the changes collide with the update)?', False, args.yes):
+                die('Stopped. Commit/stash your changes, or run with --no-pull.')
+        run(['git', 'fetch', '--quiet'], check=False)
+        incoming = run(['git', 'log', '--oneline', 'HEAD..@{u}'], check=False, capture=True).stdout.strip()
+        if incoming:
+            say('New in this update:', BOLD)
+            say(incoming)
+        else:
+            say('Already at the newest version of the program.')
+        if incoming:
+            run(['git', 'pull', '--ff-only'])
+    elif not args.no_pull:
+        say('This folder is not a git checkout: skipping the pull (copy the new version over it yourself, then run this again).', YELLOW)
+
+    if not args.no_backup and stack.running('postgres'):
+        backup(stack, quiet=True)
+    elif not args.no_backup:
+        say('PostgreSQL is not running - no backup made (nothing to dump).', YELLOW)
+
+    say('\nRebuilding the images (unchanged parts come from the cache).', BOLD)
+    build(stack)
+    start(stack)
+    version = open(os.path.join(WEBSERVER, 'VERSION')).read().strip() if os.path.exists(os.path.join(WEBSERVER, 'VERSION')) else '?'
+    say(f'\nBacLab {version} is running.', GREEN)
+    if not args.skip_db_check:
+        missing = db_status(stack, show_hint=False)
+        if missing and confirm(f'Install the {len(missing)} missing database(s) now?', False, args.yes):
+            for key in missing:
+                db_install(stack, key, args.yes)
+    say('\nUpdate complete. Your data (jobs, results, databases, users) was not touched.', GREEN)
+
+
+# ---------------------------------------------------------------- backups
+def postgres_credentials(stack):
+    values = {}
+    path = os.path.join(ENVS, f'.{stack.mode}', '.postgres')
+    try:
+        with open(path) as handle:
+            for line in handle:
+                if '=' in line and not line.startswith('#'):
+                    key, _, value = line.strip().partition('=')
+                    values[key] = value
+    except OSError:
+        die(f'{path} not found')
+    return values['POSTGRES_USER'], values['POSTGRES_DB']
+
+
+def backup(stack, quiet=False):
+    os.makedirs(BACKUPS, exist_ok=True)
+    user, database = postgres_credentials(stack)
+    target = os.path.join(BACKUPS, 'baclab-%s.sql.gz' % time.strftime('%Y%m%d-%H%M%S'))
+    say(f'Backing up the PostgreSQL database to {target}')
+    dump = subprocess.Popen(stack.base + ['exec', '-T', 'postgres', 'pg_dump', '--clean', '--if-exists', '-U', user, database], cwd=WEBSERVER, stdout=subprocess.PIPE)
+    with open(target, 'wb') as out:
+        zipper = subprocess.Popen(['gzip'], stdin=dump.stdout, stdout=out)
+        dump.stdout.close()
+        zipper.communicate()
+    if dump.wait() != 0 or zipper.returncode != 0 or os.path.getsize(target) < 200:
+        os.remove(target)
+        die('The backup failed (is the postgres container running?). Update stopped: nothing was changed.')
+    say(f'Backup written ({os.path.getsize(target) // 1024} kB). Uploaded files and results live in data/ and are not part of this dump.', GREEN)
+    old = sorted(glob.glob(os.path.join(BACKUPS, 'baclab-*.sql.gz')))[:-10]   # keep the newest ten
+    for path in old:
+        os.remove(path)
+    return target
+
+
+def cmd_backup(args):
+    backup(Stack())
+
+
+def cmd_restore(args):
+    stack = Stack()
+    path = args.file if os.path.isabs(args.file) else os.path.join(ROOT, args.file)
+    if not os.path.exists(path):
+        die(f'{path} not found')
+    if not args.yes and not confirm('This replaces the contents of the database (users, job records, admin settings) with the backup. Continue?', False):
+        die('Cancelled.')
+    user, database = postgres_credentials(stack)
+    gunzip = subprocess.Popen(['gunzip', '-c', path], stdout=subprocess.PIPE)
+    result = subprocess.run(stack.base + ['exec', '-T', 'postgres', 'psql', '-U', user, database], cwd=WEBSERVER, stdin=gunzip.stdout)
+    gunzip.stdout.close()
+    if result.returncode != 0:
+        die('Restore failed.')
+    stack.manage('django', 'migrate', '--noinput')
+    say('Restored.', GREEN)
+
+
+# ---------------------------------------------------------------- databases
+def catalog():
+    path = os.path.join(WEBSERVER, 'baclab', 'db_catalog.py')
+    spec = importlib.util.spec_from_file_location('baclab_db_catalog', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def enabled_tool_keys():
+    """Tools switched on in enabled_tools.csv / the environment file (the admin switches are checked inside the app)."""
+    enabled = {}
+    try:
+        with open(os.path.join(WEBSERVER, 'enabled_tools.csv')) as handle:
+            for line in handle.read().splitlines()[1:]:
+                name, _, flag = line.partition(',')
+                if name.strip():
+                    enabled[name.strip()] = flag.strip() == '1'
+    except OSError:
+        pass
+    return enabled
+
+
+def db_status(stack, show_hint=True):
+    """Print the installation state of every database; returns the keys of missing ones that an enabled tool needs."""
+    cat = catalog()
+    enabled = enabled_tool_keys()
+    missing = []
+    say('\nReference databases (folder databases/):', BOLD)
+    for entry, installed in cat.status(DATABASES):
+        needed = any(enabled.get(tool, True) for tool in entry['tools'])
+        if installed:
+            mark, colour = 'installed', GREEN
+        elif needed and not entry.get('optional'):
+            mark, colour = 'MISSING  ', RED
+            missing.append(entry['key'])
+        else:
+            mark, colour = 'not installed', YELLOW
+        say(f"  {colour}{mark:<13}{RESET} {entry['key']:<14} {entry['title']}  [{entry['size']}]  used by {', '.join(entry['tools'])}")
+    if missing:
+        say(f'\n{len(missing)} database(s) needed by enabled tools are missing: ./baclab db install {" ".join(missing)}', YELLOW)
+    elif show_hint:
+        say('\nEverything the enabled tools need is installed.', GREEN)
+    return missing
+
+
+def open_permissions(stack, entry=None):
+    """Make the installed files readable for the application containers. Some downloaders create folders only their own user may read
+    (antiSMASH: mode 700), and the web/worker containers run as another user than the one that installed the database."""
+    folders = sorted({marker.split('/')[0] for marker in (entry.get('markers_all', []) + entry.get('markers_any', []))}) if entry else ['.']
+    for folder in folders:
+        stack.tools(f'chmod -R a+rX /databases/{folder}', check=False)
+
+
+def db_install(stack, key, yes=False):
+    cat = catalog()
+    entry = cat.BY_KEY.get(key)
+    if not entry:
+        die(f'Unknown database "{key}". Known: {", ".join(sorted(cat.BY_KEY))}')
+    say(f"\nInstalling: {entry['title']}  (about {entry['size']})", BOLD)
+    if entry.get('note'):
+        say(entry['note'])
+    install = entry['install']
+    os.makedirs(DATABASES, exist_ok=True)
+    if install['kind'] == 'shell':
+        stack.tools(install['command'])
+    elif install['kind'] == 'tool-script':
+        activate = f"source /opt/conda/etc/profile.d/conda.sh && conda activate {install['env']} && " if install.get('env') else ''
+        stack.tools(f"{activate}bash /app/tools/{install['script']} /databases/{install['target']}")
+    elif install['kind'] == 'host-script':
+        run([os.path.join(ROOT, install['script'])])
+    else:
+        say(install.get('note', 'This one has to be installed by hand.'), YELLOW)
+        return
+    open_permissions(stack, entry)
+    if cat.is_installed(entry, DATABASES):
+        say(f"{entry['title']}: installed.", GREEN)
+    else:
+        say(f"{entry['title']}: the installer finished but the expected files are not there ({', '.join(entry.get('markers_all') or entry.get('markers_any'))}).", RED)
+
+
+def cmd_db(args):
+    if args.action == 'status':
+        stack = Stack() if args.inside else None
+        if args.inside:
+            stack.manage('django', 'check_databases', *(['--size'] if args.size else []))
+        else:
+            db_status(None)
+    elif args.action == 'install':
+        stack = Stack()
+        keys = args.keys
+        if not keys:
+            keys = db_status(stack, show_hint=False)
+            if not keys:
+                return
+            if not confirm(f'Install all {len(keys)} missing database(s) listed above?', True, args.yes):
+                return
+        for key in keys:
+            db_install(stack, key, args.yes)
+    elif args.action == 'test':
+        stack = Stack()
+        stack.manage('django', 'check_databases', '--strict')
+    elif args.action == 'fix-permissions':
+        open_permissions(Stack())
+        say('Permissions of databases/ fixed (everything readable for the application containers).', GREEN)
+    elif args.action == 'list':
+        for entry in catalog().DATABASES:
+            say(f"{entry['key']:<14} {entry['title']}")
+
+
+def cmd_dbtools(args):
+    """Run a shell command in the dbtools container (used by manage_*_db.sh)."""
+    Stack().tools(' '.join(args.command))
+
+
+# ---------------------------------------------------------------- everyday commands
+def cmd_status(args):
+    stack = Stack()
+    version = open(os.path.join(WEBSERVER, 'VERSION')).read().strip() if os.path.exists(os.path.join(WEBSERVER, 'VERSION')) else '?'
+    say(f'BacLab {version}, {stack.mode} mode', BOLD)
+    stack.cmd('ps', check=False)
+    db_status(stack)
+
+
+def cmd_selftest(args):
+    stack = Stack()
+    extra = (['--run'] if args.run else []) + sum((['--tool', t] for t in args.tool), [])
+    stack.manage('celeryworker', 'selftest', *extra)
+
+
+def cmd_simple(args):
+    stack = Stack()
+    if args.command == 'start':
+        start(stack)
+    elif args.command == 'stop':
+        stack.cmd('stop')
+    elif args.command == 'restart':
+        # Recreate only the application containers (so changed settings files are read); never the database or redis
+        stack.cmd('up', '-d', '--force-recreate', '--no-deps', *app_services(stack))
+    elif args.command == 'logs':
+        stack.cmd('logs', '--tail', '200', *(['-f'] if args.follow else []), *args.service, check=False)
+    elif args.command == 'shell':
+        stack.exec(args.service, '/entrypoint', 'bash')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest='command')
+    sub.required = True
+    yes = argparse.ArgumentParser(add_help=False)
+    yes.add_argument('-y', '--yes', action='store_true', help='take the default answer to every question')
+
+    p = sub.add_parser('install', parents=[yes], help='first-time setup')
+    p.add_argument('--local', action='store_true', help='local testing instead of production')
+    p.add_argument('--mode', choices=['production', 'local'])
+    p.add_argument('--force', action='store_true', help='run again although already installed')
+    p.add_argument('--no-start', action='store_true', help='only write the settings; build and start later')
+    p.set_defaults(func=cmd_install)
+
+    p = sub.add_parser('update', parents=[yes], help='pull, rebuild, restart (data is kept)')
+    p.add_argument('--no-pull', action='store_true', help='do not git pull')
+    p.add_argument('--no-backup', action='store_true', help='skip the PostgreSQL backup')
+    p.add_argument('--skip-db-check', action='store_true')
+    p.set_defaults(func=cmd_update)
+
+    p = sub.add_parser('status', help='containers, version, databases')
+    p.set_defaults(func=cmd_status)
+
+    p = sub.add_parser('db', parents=[yes], help='reference databases')
+    p.add_argument('action', choices=['status', 'install', 'test', 'list', 'fix-permissions'], help='status: what is installed; install [key...]: install (all missing when no key); test: exit 1 when a needed one is missing; fix-permissions: make every installed file readable for the containers')
+    p.add_argument('keys', nargs='*')
+    p.add_argument('--inside', action='store_true', help='status: ask the running application (includes the switches set in the admin)')
+    p.add_argument('--size', action='store_true')
+    p.set_defaults(func=cmd_db)
+
+    p = sub.add_parser('selftest', help='check environments and databases inside the containers')
+    p.add_argument('--run', action='store_true', help='also run the example job of every tool that has one')
+    p.add_argument('--tool', action='append', default=[])
+    p.set_defaults(func=cmd_selftest)
+
+    p = sub.add_parser('backup', help='dump the PostgreSQL database to backups/')
+    p.set_defaults(func=cmd_backup)
+    p = sub.add_parser('restore', parents=[yes], help='load a dump from backups/')
+    p.add_argument('file')
+    p.set_defaults(func=cmd_restore)
+
+    for name in ('start', 'stop', 'restart'):
+        p = sub.add_parser(name)
+        p.set_defaults(func=cmd_simple)
+    p = sub.add_parser('logs')
+    p.add_argument('service', nargs='*')
+    p.add_argument('-f', '--follow', action='store_true')
+    p.set_defaults(func=cmd_simple)
+    p = sub.add_parser('shell')
+    p.add_argument('service', nargs='?', default='django')
+    p.set_defaults(func=cmd_simple)
+
+    p = sub.add_parser('dbtools')   # internal
+    p.add_argument('command', nargs=argparse.REMAINDER)
+    p.set_defaults(func=cmd_dbtools)
+
+    args = parser.parse_args()
+    try:
+        args.func(args)
+    except KeyboardInterrupt:
+        sys.exit(130)
+
+
+if __name__ == '__main__':
+    main()

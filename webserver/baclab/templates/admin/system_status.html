@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main">
+  <p>BacLab version <b>{{ version }}</b>. Databases are read from <code>{{ databases_dir }}</code>.
+     Install what is missing on the server with <code>./baclab db install &lt;key&gt;</code> (see <code>./baclab db status</code>).</p>
+
+  <h2>Disk and queues</h2>
+  <table style="width:100%">
+    <thead><tr><th>Volume</th><th>Path</th><th>Used</th><th>Free</th><th>Total</th></tr></thead>
+    <tbody>
+    {% for d in disks %}
+      <tr><td>{{ d.name }}</td><td><code>{{ d.path }}</code></td>
+          <td><span style="color:{% if d.percent >= 90 %}#dc3545{% elif d.percent >= 75 %}#b26a00{% else %}#28a745{% endif %}">{{ d.used_h }} ({{ d.percent }}%)</span></td>
+          <td>{{ d.free_h }}</td><td>{{ d.total_h }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if queue.unserved %}<p style="color:#dc3545"><b>Warning:</b> jobs are waiting in the queue(s) {{ queue.unserved|join:", " }} but no worker listens to them (a worker running an older image?). Restart the workers: <code>./baclab restart</code>, or rebuild: <code>./baclab update --no-pull</code>.</p>{% endif %}
+  <p>Workers answering: <b>{{ queue.workers|length }}</b>{% if queue.workers %} ({{ queue.workers|join:", " }}){% else %} &mdash; <span style="color:#dc3545">none: jobs will not run until a worker is up (<code>./baclab logs celeryworker</code>)</span>{% endif %}.
+     Jobs waiting:
+     {% for name, n in queue.lengths.items %}<code>{{ name }}</code> {{ n }}{% if not forloop.last %}, {% endif %}{% empty %}unknown (broker not reachable){% endfor %}.
+     <a href="{% url 'admin:monitor' %}">Live monitor</a> &middot; <a href="{% url 'admin:usage' %}">Usage per user, group and tool</a></p>
+
+  <h2>Tools</h2>
+  <table style="width:100%">
+    <thead><tr><th>Tool</th><th>Kind</th><th>Shown to users</th><th>Missing database</th></tr></thead>
+    <tbody>
+    {% for tool in tools %}
+      <tr>
+        <td>{% if tool.url %}<a href="{{ tool.url }}">{{ tool.title }}</a>{% else %}{{ tool.title }}{% endif %}</td>
+        <td>{{ tool.kind }}</td>
+        <td>{% if tool.enabled %}<span style="color:#28a745">yes</span>{% else %}<span style="color:#6c757d">no</span>{% endif %}</td>
+        <td>{% if tool.missing %}<span style="color:#dc3545">{{ tool.missing|join:"; " }}</span>{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Databases</h2>
+  <table style="width:100%">
+    <thead><tr><th>Key</th><th>Database</th><th>Status</th><th>Size</th><th>Used by</th></tr></thead>
+    <tbody>
+    {% for row in databases %}
+      <tr>
+        <td><code>{{ row.entry.key }}</code></td>
+        <td>{{ row.entry.title }}{% if row.entry.optional %} <small>(optional)</small>{% endif %}</td>
+        <td>{% if row.installed %}<span style="color:#28a745">installed</span>{% else %}<span style="color:#dc3545">not installed</span>{% endif %}</td>
+        <td>{{ row.size|default:row.entry.size }}</td>
+        <td>{{ row.tools|join:", " }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p><a href="?size=1">Compute sizes of the installed databases</a> (slow for big ones)</p>
+</div>
+{% endblock %}

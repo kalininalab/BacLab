@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+
+celery -A baclab.taskapp worker -l INFO -Q "${CELERY_QUEUES:-celery,fast,heavy}"

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block css %}
+<style>
+  .sequence-line {
+    display: flex;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    white-space: pre;
+  }
+  .line-number {
+    color: #6b7280; /* gray-500 */
+    width: 60px;
+    text-align: right;
+    padding-right: 12px;
+    font-weight: 600;
+  }
+  .residue-block { padding-right: 6px; }
+  .seq-container {
+    background: #f9fafb; /* gray-50 */
+    border: 1px solid #e5e7eb; /* gray-200 */
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+  }
+  .btn:hover { background: var(--primary-color, #005aa2); } /* indigo-700 */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    padding: 16px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="container" style="max-width: 900px; margin: 0 auto;">
+  <header style="margin: 16px 0 24px;">
+    <h3 style="margin: 0; color: var(--primary-color, #005aa2);">Protein Sequence and Annotation</h3>
+  </header>
+
+  <div class="card">
+    <div id="header-info" style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 12px;">
+      <h5 style="margin:0 0 6px;">Sequence Details</h5>
+    </div>
+
+    <div style="display:flex; gap: 12px; align-items:center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 10px;">
+      <h5 style="margin:0;">Amino Acid Sequence</h5>
+      <button id="copy-button" class="btn" type="button" onclick="copySequence()">Copy Raw Sequence</button>
+    </div>
+
+    <div id="sequence-display" class="seq-container">
+      <p id="sequence-error" style="color:#ef4444; display:none;">Error: Could not process sequence data.</p>
+    </div>
+
+    <div id="total-length" style="color:#6b7280; margin-top: 8px; font-size: 0.9rem;"></div>
+  </div>
+</div>
+
+<script>
+// Inject FASTA from Django context. Provide raw_fasta in your view.
+const rawFasta = `{{ raw_fasta|default:''}}`;
+
+// Constants
+const RESIDUES_PER_BLOCK = 10;
+const BLOCKS_PER_LINE = 6; // 60 per line
+const RESIDUES_PER_LINE = RESIDUES_PER_BLOCK * BLOCKS_PER_LINE;
+
+const headerInfoEl = document.getElementById('header-info');
+const sequenceDisplayEl = document.getElementById('sequence-display');
+const totalLengthEl = document.getElementById('total-length');
+const sequenceErrorEl = document.getElementById('sequence-error');
+
+function parseFasta(fastaString) {
+  const lines = (fastaString || '').trim().split(/\r?\n/);
+  if (!lines.length) return null;
+  const header = lines[0].startsWith('#') ? lines[0].slice(1).trim() : '';
+  const sequence = lines.slice(1).join('').replace(/[^A-Za-z]/g, '').toUpperCase();
+  return { header, sequence };
+}
+
+function renderSequence(sequence) {
+  let html = '';
+  const totalLength = sequence.length;
+
+  for (let i = 0; i < totalLength; i += RESIDUES_PER_LINE) {
+    const lineSeq = sequence.substring(i, i + RESIDUES_PER_LINE);
+    let residueBlocks = '';
+    for (let j = 0; j < lineSeq.length; j += RESIDUES_PER_BLOCK) {
+      const block = lineSeq.substring(j, j + RESIDUES_PER_BLOCK);
+      residueBlocks += `<span class="residue-block">${block}</span>`;
+    }
+    const lineNumber = i + 1;
+    html += `
+      <div class="sequence-line">
+        <span class="line-number">${lineNumber}</span>
+        ${residueBlocks}
+      </div>
+    `;
+  }
+  sequenceDisplayEl.innerHTML = html;
+  totalLengthEl.textContent = `Total length: ${totalLength} amino acids.`;
+}
+
+function renderHeader(header) {
+  const extractKeyInfo = (key) => {
+    const m = header.match(new RegExp(`${key}=([^\\s]+)`));
+    return m ? m[1] : null;
+  };
+  const parts = header.split(/\s+/);
+  const accessId = parts[0] || 'N/A';
+  let description = header.substring(accessId.length).trim();
+  description = description.replace(/\s(OS|OX|GN|PE|SV)=[^=]*?(?=\s|$)/g, '').trim();
+
+  const items = [
+    { label: 'Accession ID', value: accessId },
+    { label: 'Description', value: description || 'N/A' },
+    { label: 'Organism (OS)', value: extractKeyInfo('OS') || 'N/A' },
+    { label: 'Gene Name (GN)', value: extractKeyInfo('GN') || 'N/A' },
+    { label: 'Protein Existence (PE)', value: extractKeyInfo('PE') || 'N/A' },
+  ];
+
+  let html = '<h5 style="margin:0 0 6px;">Sequence Details</h5><dl style="margin:0;">';
+  items.forEach(item => {
+    html += `
+      <div style="display:flex; gap:10px; margin:3px 0;">
+        <dt style="min-width:170px; color:#6b7280;">${item.label}:</dt>
+        <dd style="margin:0; font-family: Consolas, 'Courier New', monospace;">${item.value}</dd>
+      </div>
+    `;
+  });
+  html += '</dl>';
+  headerInfoEl.innerHTML = html;
+}
+
+function copySequence() {
+  const data = parseFasta(rawFasta);
+  if (!data || !data.sequence) { alert('No sequence data to copy'); return; }
+  const ta = document.createElement('textarea');
+  ta.value = data.sequence;
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    const btn = document.getElementById('copy-button');
+    const t = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = t, 1200);
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const parsed = parseFasta(rawFasta);
+  if (parsed && parsed.sequence) {
+    renderHeader(parsed.header || '');
+    renderSequence(parsed.sequence);
+  } else {
+    headerInfoEl.innerHTML = '<h5 style="margin:0; color:#ef4444;">Error Loading Data</h5>';
+    sequenceDisplayEl.innerHTML = '<p style="color:#ef4444;">The provided data could not be parsed.</p>';
+    sequenceErrorEl.style.display = '';
+  }
+});
+</script>
+{% endblock %}

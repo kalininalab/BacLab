@@ -1,0 +1,21 @@
+{% load static %}
+    <div class="collapsible-header custom-header grey lighten-4">
+    How to use Cblaster?
+    </div>
+    <div class="collapsible-body">
+    <p class="spaced-list">
+
+    <p>Upload your sequences in GenBank format (.gbk, .gb, .gbff).</p>
+    <center>
+    <div><img src="{% static 'images/cblaster_input_red.png' %}" width="100%"></div>
+    </center>
+    <p>Select the blast type and database (default values are: Local & INHOUSE Myxo protein):</p>
+    <p>You can adjust parameters or keep the defaults.</p>
+    <p>Click Submit to start the cblaster job. You will receive a job ID and can revisit later.</p>
+    <p>cblaster results can be visualized on the results page or downloaded.</p>
+    <center>
+    <div><img src="{% static 'images/cblaster_results.png' %}" width="100%"></div>
+    </center>
+    </p>
+    </div>
+        

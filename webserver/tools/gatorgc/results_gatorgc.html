@@ -1,0 +1,64 @@
+{% extends "results.html" %}
+
+{% block results %}
+<style>
+    .gator-window { border: 1px solid #ddd; border-radius: 4px; padding: 12px 16px; margin: 16px 0; background: #fff; }
+    .gator-window h6 { margin: 0 0 8px; font-weight: bold; }
+    .gator-plots { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+    .gator-plots figure { margin: 0; flex: 1 1 100%; min-width: 0; }
+    .gator-plots figcaption { font-size: 0.85rem; color: #555; margin-bottom: 4px; }
+    .gator-plots img { width: 100%; height: auto; border: 1px solid #eee; background: #fff; }
+    .gator-links a { margin-right: 16px; font-size: 0.9rem; }
+</style>
+
+<div id="gatorgcResults_div">
+    <div style="padding-left: 0; margin-left: 20px; margin-right: 20px;">
+        <h4>GATOR-GC Gene Cluster Hits:</h4>
+        <div style="max-height: 50vh; overflow: auto;">
+            {{ hitsTable|safe }}
+        </div>
+
+        <h4 style="margin-top: 40px;">Genomic windows ({{ windows|length }}):</h4>
+        {% for window in windows %}
+        <div class="gator-window">
+            <h6>{{ window.title }}</h6>
+            <div class="gator-plots">
+                {% if window.neighborhood_plot %}
+                <figure>
+                    <figcaption>Synteny comparison with the other windows (this window on top; links join homologous genes)</figcaption>
+                    <a href="{{ window.neighborhood_plot }}" target="_blank" rel="noopener"><img src="{{ window.neighborhood_plot }}" alt="Neighbourhood plot of {{ window.title }}" loading="lazy"></a>
+                </figure>
+                {% endif %}
+                {% if window.conservation_plot %}
+                <figure>
+                    <figcaption>Gene conservation in this window (colour = percentage of windows with a homolog)</figcaption>
+                    <a href="{{ window.conservation_plot }}" target="_blank" rel="noopener"><img src="{{ window.conservation_plot }}" alt="Conservation plot of {{ window.title }}" loading="lazy"></a>
+                </figure>
+                {% endif %}
+            </div>
+            <p class="gator-links">
+                {% if window.conservation_table %}<a href="{{ window.conservation_table }}">Conservation table (CSV)</a>{% endif %}
+                {% if window.scores_table %}<a href="{{ window.scores_table }}">Scores (CSV)</a>{% endif %}
+                {% if window.genbank %}<a href="{{ window.genbank }}">Window GenBank</a>{% endif %}
+            </p>
+        </div>
+        {% empty %}
+        <p>No plots were produced for this job.</p>
+        {% endfor %}
+    </div>
+    <script>
+        $(document).ready(function() {
+            new DataTable('#gatorgcResultsTable', {
+                language: { searchPlaceholder: 'Filter results' },
+                layout: {
+                    topStart: 'search',
+                    bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                    topEnd: null,
+                    bottomEnd: 'pageLength'
+                },
+                pageLength: 10
+            });
+        });
+    </script>
+</div>
+{% endblock results %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} {{ page.title }} {% endblock %}
+
+{% block content %}
+    <div class="col offset-s3 s6" style="margin: 50px;">
+        <div class="col offset-s3 s6">
+            <h2>{{ page.title }}</h2>
+            {% if page.last_updated %}
+                <p class="grey-text"><small>Last updated: {{ page.last_updated|date:"F j, Y" }}</small></p>
+            {% endif %}
+            {% for section in page.sections.all %}
+                {% if section.heading %}<h4>{{ section.heading }}</h4>{% endif %}
+                <div class="site-page-section">{{ section.body|safe }}</div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

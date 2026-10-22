@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static %}
+{% load citation_tags %}
+
+{% block footer_citation %}{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<script type="text/javascript" src="{% static 'js/datatables.min.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables.min.css' %}">
+
+<script src="{% static 'materialize/js/material-components-web.min.js' %}"></script>
+
+{% block results_css %}
+{% endblock results_css %}
+
+{% endblock css %}
+
+{% block content %}
+{% if not processing %}
+    {% if not error and job_id %}
+        <div style="margin-bottom: 20px; padding-left: 20px; margin-left: 0; width: 100%;">
+        {% csrf_token %}
+        <div style="width: 100%; display: flex">
+            <div class="file-field input-field" style="width: 75%">
+                <h5>Results for upload: {{ job_id }}</h5>
+                <button id="downloadResults" class="btn" style="width: 18%; margin-left: 20px" onclick="downloadResults();">Download results</button>
+
+                {% block toolSpecificExtra %}
+
+                {% endblock toolSpecificExtra %}
+
+                <script>
+                    function downloadResults() {
+                        const queryParams = new URLSearchParams(window.location.search);
+                        const jobId = queryParams.get('job_id');
+
+                        if (jobId) {
+                            const url = `{% url 'baclab:results' %}?job_id=${encodeURIComponent(jobId)}&download=True`;
+                            window.location.href = url;
+                        } else {
+                            alert('Job ID is missing from the URL');
+                            console.error('Job ID is missing from the URL');
+                        }
+                    }
+                </script>
+
+                <input type="hidden" name="job_id" value="{{ job_id }}">
+            </div>
+        </div>
+
+        <div class="results-cites">
+        {% tool_citation job_id %}
+        {% baclab_citation %}
+        </div>
+
+        {% block results %}
+        {% endblock results %}
+
+    {% else %}
+        <div class="row">
+            <div class="col s12 m8 offset-m2" style="margin-top: 20px; text-align: center;">
+                <h4 class="pagetitle">Results</h4>
+            </div>
+        </div>
+
+        <form id="submitForm" method="get" class="row" onsubmit="return checkEmptyJobID()">
+            {% csrf_token %}
+            <div class="input-field col offset-s3 s6">
+                <input id="job_id" name="job_id" type="text" class="materialize-textarea" placeholder=">MY-JOB-ID" style="height: 50px">
+                <label for="job_id">Input your Job ID</label>
+            </div>
+
+            <div class="col offset-s3 s6">
+                <div style="width: 100%; display: flex; justify-content: center">
+                    <div class="file-field input-field" style="width: 100%">
+                        <input id="submit_btn" type="submit" class="btn" style="width: 100%" value="Submit">
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function checkEmptyJobID(){
+                    if (document.getElementById('job_id').value === '') {
+                        alert('Please enter a Job ID');
+                        return false;
+                    }
+                    return true;
+                }
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    var jobIdInput = document.getElementById('job_id');
+                    var submitBtn = document.getElementById('submit_btn');
+
+                    jobIdInput.addEventListener('keypress', function(event) {
+                        if (event.key === 'Enter') {
+                            event.preventDefault(); // Prevent the default form submission
+                            submitBtn.click(); // Trigger the submit button click
+                        }
+                    });
+                });
+            </script>
+
+        </form>
+
+        {% if error %}
+            <div class="row">
+                <div class="col offset-s3 s6" style="margin-bottom: 20px; padding-left: 20px; margin-left: 0; width: 100%; text-align: center;">
+                    <h4>{{ error }}</h4>
+                    <h4>Entered Job ID: {{ job_id }}</h4>
+                </div>
+            </div>
+        {% endif %}
+
+    {% endif %}
+
+    <script>
+        localStorage.removeItem('waitTime');  // Remove waitTime from localStorage
+    </script>
+
+{% else %}
+    <div class="row">
+        <div class="col s12 m8 offset-m2" style="margin-top: 40px; margin-bottom: 20px; text-align: center;">
+            <h4>{{ processing }}</h4>
+            <h5>Your Job ID: {{ job_id }}</h5>
+            
+            <div style="margin-top: 40px; margin-bottom: 20px;">
+                <p id="progressMessage" style="font-size: 1.2rem; font-weight: 500; color: #555;">Initializing job...</p>
+                <div class="progress" style="height: 10px; border-radius: 5px; width: 80%; margin: 0 auto;">
+                    <div class="indeterminate" id="progressBar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const progressMessage = document.getElementById('progressMessage');
+        const progressBar = document.getElementById('progressBar');
+        let notifiedFailure = false;
+
+        if (window.Notification && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        function checkProgress() {
+            fetch("{% url 'baclab:job_progress' job_id %}")
+                .then(response => response.json())
+                .then(data => {
+                    // If the backend has marked the JobRecord as finished, it will cause
+                    // the view to reload and show the results anyway.
+                    // But if celery says SUCCESS, we definitely reload!
+                    if (data.state === 'SUCCESS') {
+                        if (window.Notification && Notification.permission === 'granted') {
+                            new Notification('BacLab job finished', { body: 'Job {{ job_id }} is done.' });
+                        }
+                        location.reload();
+                    } else if (data.state === 'PROGRESS') {
+                        progressMessage.textContent = data.message || 'Processing...';
+                        progressBar.className = 'indeterminate';
+                    } else if (data.state === 'FAILURE') {
+                        if (window.Notification && Notification.permission === 'granted' && !notifiedFailure) {
+                            notifiedFailure = true;
+                            new Notification('BacLab job failed', { body: 'Job {{ job_id }} failed.' });
+                        }
+                        progressMessage.textContent = 'Job failed: ' + (data.message || '');
+                        progressMessage.style.color = 'red';
+                        progressBar.className = 'determinate';
+                        progressBar.style.width = '100%';
+                        progressBar.style.backgroundColor = 'red';
+                    } else {
+                        // Pending or started
+                        progressMessage.textContent = 'Running or waiting in queue...';
+                    }
+                })
+                .catch(err => {
+                    // It's normal to get 404s if celery hasn't registered the task yet
+                    console.log('Waiting for task initialization...');
+                })
+                .finally(() => {
+                    // Poll every 5 seconds to reduce server load
+                    setTimeout(checkProgress, 5000);
+                });
+        }
+        
+        // Start polling
+        setTimeout(checkProgress, 1000);
+        
+        // As a fallback in case celery drops the task but it finished in DB:
+        // We still do a hard refresh every 30 seconds just in case!
+        setTimeout(() => location.reload(), 30000);
+    </script>
+{% endif %}
+{% endblock content %}

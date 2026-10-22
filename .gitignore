@@ -1,0 +1,42 @@
+*.b
+*.name
+.agents/
+.claude/
+data/
+databases/
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+webserver/celerybeat-schedule.*
+webserver/baclab/media/custom_db_uploads/
+webserver/baclab/media/inhouse_uploads/
+taxdump.tar.gz
+podman_mock
+error.html
+*.fastq.gz
+*.fq.gz
+.nfs*
+.baclab
+backups/
+certs/
+webserver/baclab/media/benchmarks/
+webserver/*.log
+
+# Manuscript drafts (kept out of the repository)
+paper/
+
+# Static demonstration: generated
+demo/data/
+demo/dist/
+
+# Read the Docs build
+docs/_build/
+
+# example reads are part of the repository (the rule above is for user data)
+!webserver/baclab/example_data/*.fq.gz
+!webserver/baclab/example_data/**/*.fq.gz
+Screenshot*.png
+
+# build notes for the static demonstrations: local only
+demo/README.md

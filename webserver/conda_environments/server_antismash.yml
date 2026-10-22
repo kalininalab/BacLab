@@ -1,0 +1,10 @@
+name: server_antismash
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+  - r
+dependencies:
+  - antismash==7.1.0
+  - diamond==2.0.9
+  - boost-cpp==1.74.0

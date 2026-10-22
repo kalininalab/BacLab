@@ -1,0 +1,60 @@
+{% extends "tool_base.html" %}
+{% load static %}
+
+{% block toolname %} PanBGC {% endblock %}
+
+{% block accepted_files %} .gbk {% endblock %}
+
+{% block hiddenStatusInputButtonsDiv %} hide {% endblock %}
+
+{% block toolEntries %}
+<div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;">
+    <p>Upload three or more GenBank files (.gbk) of biosynthetic gene clusters that belong to the SAME gene cluster family (e.g. a BiG-SCAPE family). PanBGC classifies their genes into core, accessory and unique ortholog groups and prepares the data for the PanBGC-DB visualisation. This analysis can take several minutes.</p>
+    <div class="compact-file-field">
+        <div class="btn btn-small multi-file-btn">
+            <span>Add GenBank files</span>
+            <input id="genomes" type="file" name="genomes" accept=".gbk" multiple>
+        </div>
+    </div>
+    <div id="genomes-list"></div>
+</div>
+
+<script src="{% static 'js/multi_file_upload.js' %}"></script>
+<script>
+    // Files picked in several rounds are added to the list instead of replacing it
+    initMultiFileUpload({inputId: 'genomes', listId: 'genomes-list', extensions: ['.gbk'], minFiles: 3, maxFiles: {{ max_files }}});
+</script>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    function checkFields(){
+        var files = document.getElementById('genomes').files;
+        var allowedExtensions = ['.gbk'];
+        if (files.length + accessionCount() < 3) {
+            alert('Please upload at least 3 file(s).');
+            return false;
+        }
+        for (var i = 0; i < files.length; i++) {
+            var name = files[i].name.toLowerCase();
+            if (!allowedExtensions.some(function (ext) { return name.endsWith(ext); })) {
+                alert('"' + files[i].name + '" has an unsupported extension. Allowed extensions: ' + allowedExtensions.join(', ') + '.');
+                return false;
+            }
+        }
+        return true;
+    }
+</script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+    document.getElementById('fasta-input-container').hidden = true;
+    document.getElementById('upload-input-container').hidden = true;
+{% endblock %}
+
+{% block exampleDataSection %}
+<div class="col s12 m8 offset-m2" style="margin: 40px 50px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
+    <a href="{% url 'baclab:download_example_data' 'panbgc' %}" class="btn btn-small">Download Example Data</a>
+    <a href="{% url 'baclab:example_results' 'panbgc' %}" class="btn btn-small">View Example Results</a>
+</div>
+{% endblock %}

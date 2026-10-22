@@ -1,0 +1,16 @@
+.*
+!.coveragerc
+!.env
+!.pylintrc
+!.babelrc
+node_modules
+assets/bundles
+
+# Keep the build context (and the image) free of local state
+*.log
+celerybeat-schedule*
+**/__pycache__
+baclab/media
+envs.example
+.env
+backups

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-section" style="margin: 20px; max-width: 480px;">
+  <h4>Login</h4>
+  <p>Logging in is optional. It lets you keep track of your previous jobs{% if allow_signup %} &ndash; <a href="{% url 'baclab:signup' %}">create an account</a>{% endif %}, and share them with your group if an administrator put you in one.
+     Without an account you can use every tool as before.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="btn">Login</button>
+  </form>
+</div>
+{% endblock %}

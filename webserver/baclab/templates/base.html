@@ -1,0 +1,266 @@
+{% load static %}
+{% load citation_tags %}
+
+<!DOCTYPE html>
+<html><head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>{% block title %}BacLab{% endblock %}</title>
+
+    <!-- universal css -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}" media="all">
+    <link rel="stylesheet" type="text/css" href="{% static 'materialize/css/materialize.min.css' %}" media="all">
+    <link rel="stylesheet" type="text/css" href="{% static 'materialize/css/material-icons.css' %}" media="all">
+
+    <link rel="icon" href="{% static 'img/favicon-32x32.png' %}" sizes="32x32">
+    <link rel="icon" href="{% static 'img/favicon-16x16.png' %}" sizes="16x16">
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+
+    <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+    <script src="{% static 'materialize/js/materialize.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/info_box.js' %}"></script>
+
+    <style>
+        .dropdown-content li {
+            border: 1px solid #ffffff !important;
+            white-space: nowrap;
+        }
+        .dropdown-content li.qr-item {
+            border-top: 1px solid rgba(255,255,255,0.4) !important;
+            background-color: var(--primary-color, #005aa2);
+            display: flex;
+        }
+        .dropdown-content li.qr-item > a {
+            background-color: var(--primary-color, #005aa2);
+            color: #ffffff !important;
+            display: flex;
+            align-items: center;
+            flex: 1;
+            padding: 12px 16px;
+        }
+        .dropdown-content li.qr-item:hover,
+        .dropdown-content li.qr-item:hover > a {
+            background-color: var(--secondary-color, #008cff);
+        }
+
+        /* Tools dropdown: one panel with a column per category, tools in alphabetical order.
+           Everything is visible at once - no flyout submenus to hunt for. */
+        #dropdownTools {
+            width: min(1320px, 98vw) !important;
+            max-height: none !important;
+            overflow: visible !important;
+            left: auto !important;
+            right: 12px !important;
+            padding: 18px 20px 8px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+        }
+        ul#dropdownTools.dropdown-content { background-color: #ffffff !important; }
+        ul#dropdownTools li, ul#dropdownTools li:hover, ul#dropdownTools li.active {
+            border: none !important; white-space: normal; background: transparent !important; min-height: 0; line-height: 1.3;
+        }
+        ul#dropdownTools .tools-column > ul > li { display: block; width: auto; padding: 0 !important; margin: 0 !important; }
+        @media (max-width: 1100px) { #dropdownTools .tools-grid { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); } }
+        #dropdownTools .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 14px 18px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        #dropdownTools .tools-column-title {
+            display: block;
+            font-size: 0.72rem !important;
+            padding: 0 0 6px;
+            margin-bottom: 6px;
+            border-bottom: 2px solid var(--primary-color, #005aa2);
+            color: var(--primary-color, #005aa2);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            line-height: 1.3;
+        }
+        #dropdownTools .tools-column-title .cat-number { opacity: 0.55; margin-right: 6px; }
+        #dropdownTools .tools-column ul { list-style: none; margin: 0; padding: 0; }
+        ul#dropdownTools .tools-column ul li a {
+            display: block;
+            padding: 5px 8px !important;
+            margin: 0 !important;
+            border-radius: 4px;
+            color: #263238 !important;
+            font-size: 0.9rem !important;
+            line-height: 1.3;
+            white-space: normal;
+        }
+        ul#dropdownTools .tools-column ul li a:hover {
+            background: var(--primary-color, #005aa2) !important;
+            color: #ffffff !important;
+        }
+        #dropdownTools .tools-footer {
+            grid-column: 1 / -1;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 4px;
+            padding-top: 6px;
+            text-align: right;
+        }
+        ul#dropdownTools .tools-footer a { display: inline-block; padding: 4px 8px; color: var(--primary-color, #005aa2) !important; font-size: 0.85rem !important; }
+
+        {% if theme %}
+        :root {
+            --primary-color: {{ theme.primary_color }};
+            --secondary-color: {{ theme.secondary_color }};
+            --bg-color: {{ theme.background_color }};
+            --button-color: {{ theme.button_color }};
+            --text-color: {{ theme.text_color }};
+        }
+        .blue {
+            background-color: var(--primary-color) !important;
+        }
+        {% else %}
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #4f46e5;
+            --bg-color: #f8fafc;
+            --button-color: #6366f1;
+            --text-color: #334155;
+        }
+        .blue {
+            background-color: var(--primary-color) !important;
+        }
+        {% endif %}
+    </style>
+
+    {% block css %}
+    {% endblock %}
+
+</head>
+<body>
+
+
+<div class="navbar-fixed">
+  <nav class="blue">
+      <div id="top_nav" class="nav-wrapper">
+        <a id="logo" class="brand-logo white-text" href="{% url 'baclab:index' %}">
+              &nbsp; &nbsp; <div id="title" style="font-variant:small-caps"> <b>BacLab</b> </div>
+          </a>
+          <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons white-text text-darken-3">...</i></a>
+          <ul id="nav-mobile" class="right hide-on-med-and-down">
+              <li><a class="dropdown-trigger white-text text-darken-3" href="#!" data-target="dropdownTools">tools</a></li>
+              <li><a href="{% url 'baclab:guides' %}" class="white-text text-darken-3">how to use</a></li>
+              <li><a href="{% url 'baclab:results' %}" class="white-text text-darken-3">results</a></li>
+              <li><a class="dropdown-trigger white-text text-darken-3" href="#!" data-target="dropdownStrains">strains</a></li>
+              <li><a href="{% url 'baclab:terms' %}" class="white-text text-darken-3">terms</a></li>
+              <li><a href="{% url 'baclab:about' %}" class="white-text text-darken-3">contact</a></li>
+              {% if accounts_enabled %}
+              {% if user.is_authenticated %}
+              <li><a href="{% url 'baclab:my_jobs' %}" class="white-text text-darken-3">my jobs</a></li>
+              <li>
+                <form method="post" action="{% url 'baclab:logout' %}" style="margin: 0;">
+                  {% csrf_token %}
+                  <button type="submit" class="white-text text-darken-3" style="background: none; border: none; cursor: pointer; font-size: inherit; font-family: inherit; padding: 0 15px;">logout ({{ user.username }}{% if user.profile.group %} &middot; {{ user.profile.group.name }}{% endif %})</button>
+                </form>
+              </li>
+              {% else %}
+              <li><a href="{% url 'baclab:login' %}" class="white-text text-darken-3">login</a></li>
+              {% endif %}
+              {% endif %}
+            </ul>
+      </div>
+</nav>
+</div>
+
+<!-- Dropdown Structure -->
+<ul id="dropdownTools" class="dropdown-content">
+  <li>
+    <ul class="tools-grid">
+      {% for column in tool_menu %}
+      <li class="tools-column">
+        <span class="tools-column-title"><span class="cat-number">{{ column.number }}</span>{{ column.title }}</span>
+        <ul>
+          {% for tool in column.tools %}<li><a href="{{ tool.url }}">{{ tool.title }}</a></li>{% endfor %}
+        </ul>
+      </li>
+      {% empty %}
+      <li class="tools-column"><span class="tools-column-title">No tools are switched on</span></li>
+      {% endfor %}
+      <li class="tools-footer"><a href="{% url 'baclab:guides' %}">How to use the tools</a> &middot; <a href="{% url 'baclab:qrcode' %}">QR code</a></li>
+    </ul>
+  </li>
+</ul>
+
+<!-- Dropdown Structure -->
+<ul id="dropdownStrains" class="dropdown-content">
+    <li><a href="{% url 'baclab:strains' 'inhouse' %}">All Strains Collection</a></li>
+    {% for collection in nav_collections %}
+    <li><a href="{% url 'baclab:strain_collection' collection.slug %}">{{ collection.name }}</a></li>
+    {% endfor %}
+</ul>
+
+<div id="content">
+
+{% block content %}
+{% endblock %}
+
+</div>
+
+<footer style="margin-top: 40px; padding: 16px 0; border-top: 1px solid #e0e0e0;">
+    {% block footer_citation %}{% baclab_citation %}{% endblock %}
+</footer>
+
+
+<script>
+
+    function isMobileDevice() {
+        return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    $(document).ready(function(){
+        $('.sidenav').sidenav();
+        $('.collapsible').collapsible();
+        $('.modal').modal();
+        $('.tooltipped').tooltip();
+        $('.dropdown-trigger').dropdown({
+            hover: true, // Activate on hover
+            coverTrigger: false, // Displays dropdown below the button
+            constrainWidth: false // Allows dropdown to be wider than the trigger button
+        });
+        $('.dropdown-trigger-mobile').dropdown({
+            coverTrigger: false, // Displays dropdown below the button
+            constrainWidth: false, // Allows dropdown to be wider than the trigger button
+            alignment: 'left'
+        });
+
+        if (isMobileDevice() || window.innerWidth <= 768) {
+            document.getElementById('structman-logo-small').height = '20';
+        }
+        if (window.innerWidth <= 400) {
+            document.getElementById('title').style.fontSize = '1.5rem';
+        }
+    });
+
+</script>
+
+<script>
+    window.addEventListener("pageshow", function(event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+</script>
+
+<script>
+function runPageInit() {
+    {% block windowonloadjstoolbase %}
+    {% endblock %}
+}
+
+window.addEventListener("pageshow", function(event) {
+    runPageInit();
+});
+</script>
+
+</body></html>

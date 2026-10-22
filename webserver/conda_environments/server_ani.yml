@@ -1,0 +1,8 @@
+name: server_ani
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.10.22
+  - fastani==1.34

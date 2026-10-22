@@ -1,0 +1,46 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} Annotation pipeline {% endblock %}
+{% block tool_description %}
+Comprehensive genome annotation using Bakta, Prokka, or AntiSMASH. <strong>Expected input:</strong> Genome assemblies in FASTA or GenBank format <code>(.fna, .fasta, .gbk)</code>.
+{% endblock %}
+
+
+{% block hiddenStatusInputButtonsDiv %} hidden {% endblock %}
+
+{% block accepted_files %} .fna, .fasta, .gbk {% endblock %}
+
+{% block toolEntries %}
+
+<div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 20px; margin-right: 50px;">
+
+    <div class="col s12 m8 offset-m2" style="margin: 20px;">
+        <input type="checkbox" name="antismash_checkbox" id="antismash_checkbox" checked>
+        <label for="antismash_checkbox" style="margin-left:20px"> AntiSMASH </label><br>
+    </div>
+
+    <div class="col s12 m8 offset-m2" style="margin: 20px;">
+        <input type="checkbox" name="bakta_checkbox" id="bakta_checkbox" checked>
+        <label for="bakta_checkbox" style="margin-left:20px"> Bakta </label><br>
+    </div>
+
+    <div class="col s12 m8 offset-m2" style="margin: 20px;">
+        <input type="checkbox" name="prokka_checkbox" id="prokka_checkbox" checked>
+        <label for="prokka_checkbox" style="margin-left:20px"> Prokka </label><br>
+    </div>
+
+
+
+</div>
+
+
+
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+
+    showFileUpload();
+    ToggleProkkaTaxon();
+
+{% endblock %}
+

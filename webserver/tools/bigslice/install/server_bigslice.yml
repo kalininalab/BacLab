@@ -1,0 +1,11 @@
+name: server_bigslice
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bigslice==2.0.2
+  # scikit-learn 1.8 removed the `copy` argument of Birch, which bigslice 2.0.2's clustering still
+  # passes ("TypeError: Birch.__init__() got an unexpected keyword argument 'copy'") - confirmed
+  # working with 1.7.2.
+  - scikit-learn==1.7.2

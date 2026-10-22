@@ -1,0 +1,44 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} MOB-suite {% endblock %}
+{% block tool_description %}
+MOB-suite (mob_recon) reconstructs, clusters, and types plasmids from draft assemblies, including mobility/relaxase typing beyond simple replicon detection. <strong>Expected input:</strong> FASTA <code>(.fasta, .fa, .fna)</code> assembly files.
+{% endblock %}
+
+{% block hiddenStatusInputButtonsDiv %} hidden {% endblock %}
+
+{% block accepted_files %} .fasta, .fa, .fna {% endblock %}
+
+{% block text_input_container %}
+{% endblock %}
+
+{% block file_upload_container %}
+        <div class="file-field input-field" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;" id="upload-input-container">
+            <div style="width: 100%; display: flex; gap: 10px; align-items: flex-start;">
+                <div class="file-field input-field" style="margin: 0;">
+                    <div class="btn btn-small" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;">
+                        <span>Upload genome(s)</span>
+                        <input id="file" type="file" name="file" multiple accept="{% block accepted_files_inner %} .fasta, .fa, .fna {% endblock %}" onchange="showFileName(this)">
+                    </div>
+                </div>
+                <div class="input-field" style="margin: 0;">
+                    <button type="button" class="btn btn-small waves-effect waves-light" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;" id="load-example-btn" onclick="loadExampleData()">Load Example Data</button>
+                </div>
+            </div>
+        </div>
+        <div id="file-name" style="margin: 20px; margin-left: 50px;"></div>
+{% endblock %}
+
+{% block toolEntries %}
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    function checkFields() {
+        return true;
+    }
+</script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+{% endblock %}

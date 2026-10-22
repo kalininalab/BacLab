@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-section" style="margin: 20px; max-width: 760px;">
+  <p><a href="{% url 'baclab:my_jobs' %}">&larr; back to my jobs</a></p>
+  <h4>API keys</h4>
+  <p>An API key lets a script or pipeline submit jobs and fetch results as you. Treat it like a password.</p>
+
+  {% if new_key %}
+  <div class="card-panel green lighten-4">
+    <b>Your new key (shown only once &ndash; copy it now):</b><br>
+    <code style="font-size: 1.05rem; word-break: break-all;">{{ new_key }}</code>
+  </div>
+  {% endif %}
+
+  <form method="post" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="What is it for? e.g. cluster pipeline" maxlength="64" style="margin: 0; width: 20rem;">
+    <button type="submit" class="btn">Create key</button>
+  </form>
+
+  <table class="striped" style="margin-top: 1rem;">
+    <thead><tr><th>Name</th><th>Key starts with</th><th>Created</th><th>Last used</th><th></th></tr></thead>
+    <tbody>
+      {% for token in tokens %}
+      <tr><td>{{ token.name }}</td><td><code>{{ token.prefix }}&hellip;</code></td><td>{{ token.created_at|date:"Y-m-d" }}</td>
+          <td>{{ token.last_used|date:"Y-m-d H:i"|default:"never" }}</td>
+          <td><form method="post" action="{% url 'baclab:api_key_delete' token.pk %}" onsubmit="return confirm('Revoke this key?');">{% csrf_token %}<button class="btn-flat" type="submit">revoke</button></form></td></tr>
+      {% empty %}<tr><td colspan="5" class="muted">No keys yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  <h5 style="margin-top: 2rem;">Using the key</h5>
+  <p>With the <code>baclab-client</code> script from the BacLab folder:</p>
+  <pre style="white-space: pre-wrap;">export BACLAB_URL={{ site }}
+export BACLAB_TOKEN=lm_...
+./baclab-client tools
+./baclab-client submit padloc genome1.fasta genome2.fasta --wait --download results.zip</pre>
+  <p>or plain HTTP:</p>
+  <pre style="white-space: pre-wrap;">curl -H "Authorization: Bearer $BACLAB_TOKEN" -F genomes=@genome1.fasta {{ site }}/api/v1/jobs/padloc/submit/
+curl -H "Authorization: Bearer $BACLAB_TOKEN" {{ site }}/api/v1/jobs/&lt;job id&gt;/</pre>
+</div>
+{% endblock %}

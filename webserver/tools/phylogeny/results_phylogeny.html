@@ -1,0 +1,100 @@
+{% extends "results.html" %}
+{% load static %}
+
+{% block results_css %}
+<script type="text/javascript" src="{% static 'js/d3.v3.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/phylotree.css' %}">
+<script type="text/javascript" src="{% static 'js/phylotree.js' %}"></script>
+
+<style>
+    /* Ensure the SVG scales appropriately */
+    #tree_display {
+        width: 100%;
+        min-height: 600px;
+    }
+    .tree-selection-brush .extent { fill-opacity: .05; stroke: #fff; }
+
+    .node {
+        font-size: 11px;
+        cursor: pointer;
+    }
+
+    .branch {
+        fill: none;
+        stroke: #999;
+        stroke-width: 2px;
+    }
+
+    .node-label {
+        fill: #333;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block results %}
+<div id="Phylogeny_Results_div" class="">
+    <div style="display: flex; justify-content: flex-start;">
+        <div style="width: 90%;" id="blastTabularTable" class="">
+            <div style="padding-left: 0; margin-left: 20px; margin-right: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h4>Phylogenetic Tree:</h4>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="changeLayout('linear')">Linear</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="changeLayout('radial')">Radial</button>
+                    </div>
+                </div>
+
+                <div style="max-height: auto; overflow: auto; border: 1px solid var(--primary-color, #005aa2); background: #f9f9f9;">
+                    <svg id="tree_display"></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Capture the Newick string from Django context
+    // Ensure your view passes 'phylogenetic_tree_data'
+    var newick = `{{ phylogeneticTreeData|safe }}`;
+
+    // 2. Initialize the tree object
+    var tree = d3.layout.phylotree()
+        .svg(d3.select("#tree_display"))
+        .options({
+            'selectable': true,
+            'collapsible': true,
+            'transitions': true
+        });
+
+    // 4. Render the tree
+    function renderTree() {
+        if (newick && newick !== "None") {
+            d3.select("#tree_display").selectAll("*").remove();
+
+            // REMOVE 'var' here so it updates the global variable
+            tree = d3.layout.phylotree()
+                .svg(d3.select("#tree_display"))
+                .options({
+                    'selectable': true,
+                    'collapsible': true,
+                    // ... rest of options
+                });
+
+            tree(newick).layout();
+        }
+    }
+
+    // Ensure the function runs after the page (and D3) is fully loaded
+    document.addEventListener("DOMContentLoaded", function() {
+        renderTree();
+    });
+
+    // Layout toggle function
+    function changeLayout(mode) {
+        var is_radial = (mode === 'radial');
+        tree.radial(is_radial).placenodes().update();
+    }
+</script>
+{% endblock results %}
+

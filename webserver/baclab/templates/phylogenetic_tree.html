@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container" style="width: 95%; max-width: 1400px; margin-top: 40px;">
+    <div class="row">
+        <div class="col s12">
+            <h4 class="pagetitle" style="margin-bottom: 20px;">
+                Phylogenetic Tree Visualizer
+            </h4>
+            
+            <div class="card">
+                <div class="card-content">
+                    <p style="margin-bottom: 10px;">
+                        Interactive viewer. Use your mouse to zoom and pan. You can also change the layout using the controls below.
+                    </p>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn" onclick="tree.setTreeType('rectangular');">Rectangular</button>
+                        <button class="btn" onclick="tree.setTreeType('circular');">Circular</button>
+                        <button class="btn" onclick="tree.setTreeType('radial');">Radial</button>
+                        <button class="btn" onclick="tree.setTreeType('diagonal');">Diagonal</button>
+                    </div>
+
+                    <!-- The container for phylocanvas -->
+                    <div id="phylocanvas" style="width: 100%; height: 75vh; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="newickData" style="display: none;">{{ newick_data }}</div>
+
+<!-- Load Phylocanvas -->
+<script src="https://cdn.jsdelivr.net/npm/phylocanvas@2.8.1/dist/phylocanvas.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var newickString = document.getElementById('newickData').innerText.trim();
+        
+        if (newickString && newickString !== "") {
+            try {
+                if (typeof Phylocanvas.createTree === 'function') {
+                    window.tree = Phylocanvas.createTree('phylocanvas');
+                } else if (typeof Phylocanvas === 'function') {
+                    window.tree = new Phylocanvas('phylocanvas');
+                } else if (Phylocanvas.default && typeof Phylocanvas.default.createTree === 'function') {
+                    window.tree = Phylocanvas.default.createTree('phylocanvas');
+                } else if (Phylocanvas.Tree) {
+                    window.tree = new Phylocanvas.Tree('phylocanvas');
+                } else {
+                    throw new Error("Phylocanvas API unknown. Keys: " + Object.keys(Phylocanvas).join(', '));
+                }
+                tree.setTreeType('rectangular');
+                tree.load(newickString);
+            } catch (e) {
+                console.error("Error loading tree:", e);
+                document.getElementById('phylocanvas').innerHTML = '<h5 style="text-align:center; padding-top:20px; color:red;">Error rendering tree: ' + e.toString() + '</h5>';
+            }
+        } else {
+            document.getElementById('phylocanvas').innerHTML = '<h5 style="text-align:center; padding-top:20px;">No tree data available.</h5>';
+        }
+    });
+</script>
+{% endblock %}

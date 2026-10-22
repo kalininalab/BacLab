@@ -1,0 +1,8 @@
+name: server_gubbins
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.10.22
+  - gubbins==3.4.3

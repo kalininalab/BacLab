@@ -1,0 +1,65 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} SPAdes {% endblock %}
+{% block tool_description %}
+SPAdes is a de novo genome assembler. <strong>Expected input:</strong> FASTQ <code>(.fastq, .fq)</code> files containing sequence reads.
+{% endblock %}
+
+{% block hiddenStatusInputButtonsDiv %} hidden {% endblock %}
+
+{% block accepted_files %} .fastq, .fq, .fastq.gz, .fq.gz {% endblock %}
+
+{% block text_input_container %}
+{% endblock %}
+
+{% block file_upload_container %}
+        <div class="file-field input-field" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;" id="upload-input-container">
+            <div style="width: 100%; display: flex; gap: 10px; align-items: flex-start;">
+                <div class="file-field input-field" style="margin: 0;">
+                    <div class="btn btn-small" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;">
+                        <span>Upload reads (1 or 2 files)</span>
+                        <input id="file" type="file" name="file" multiple accept="{% block accepted_files_inner %} .fastq, .fq, .fastq.gz, .fq.gz {% endblock %}" onchange="showFileName(this)">
+                    </div>
+                </div>
+                <div class="input-field" style="margin: 0;">
+                    <button type="button" class="btn btn-small waves-effect waves-light" style="margin-top: 0px; height: 2.2rem; line-height: 2.2rem; padding: 0 10px; font-size: 0.85rem;" id="load-example-btn" onclick="loadExampleData()">Load Example Data</button>
+                </div>
+            </div>
+        </div>
+        <div id="file-name" style="margin: 20px; margin-left: 50px;"></div>
+{% endblock %}
+
+{% block toolEntries %}
+  <div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 20px; margin-right: 50px;">
+    <div style="margin-left: 20px; margin-top: 20px; margin-bottom: 20px;">
+        <label>Reads Type: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Are your reads single-end or paired-end?">❓</i></label>
+        <p>
+          <label>
+            <input name="read_type" type="radio" value="single" checked />
+            <span>Single-end reads</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input name="read_type" type="radio" value="paired" />
+            <span>Paired-end reads</span>
+          </label>
+        </p>
+    </div>
+  </div>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    function checkFields() {
+        return true;
+    }
+</script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+document.getElementById('load-example-btn').addEventListener('click', function() {
+    let pairedRadio = document.querySelector('input[name="read_type"][value="paired"]');
+    if (pairedRadio) pairedRadio.checked = true;
+});
+{% endblock %}

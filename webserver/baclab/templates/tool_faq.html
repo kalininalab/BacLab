@@ -1,0 +1,8 @@
+<div class="collapsible-header custom-header grey lighten-4">{% if tool.faq_title %}{{ tool.faq_title }}{% else %}How to use {{ tool.title }}?{% endif %}</div>
+<div class="collapsible-body">
+    <p class="spaced-list">
+        {% for step in tool.faq %}
+        <p>{{ step }}</p>
+        {% endfor %}
+    </p>
+</div>

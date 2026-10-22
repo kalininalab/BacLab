@@ -1,0 +1,51 @@
+# BacLab - local test settings of the Django, Celery and nginx containers.
+# Created from this template by `./baclab install`; edit it, then `./baclab restart`.
+# Never commit the real file (webserver/.envs/ is git-ignored).
+
+DJANGO_SETTINGS_MODULE=config.settings.local
+DJANGO_SECRET_KEY=@SECRET_KEY@
+DJANGO_ADMIN_URL=admin/
+# Host names the site is reachable under, comma separated (an IP address is fine)
+DJANGO_ALLOWED_HOSTS=@ALLOWED_HOSTS@
+# True once nginx has certificates (webserver/../certs/fullchain.pem + privkey.pem); then also use https:// in WEBSITE_LINK
+DJANGO_SECURE_SSL_REDIRECT=@SSL_REDIRECT@
+WEBSITE_LINK=@WEBSITE_LINK@
+
+USE_DOCKER=yes
+REDIS_URL=redis://redis:6379/0
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_FLOWER_USER=@FLOWER_USER@
+CELERY_FLOWER_PASSWORD=@FLOWER_PASSWORD@
+
+# The administrator account is created on the first start (an existing account is never changed here)
+ADMIN_USER=@ADMIN_USER@
+ADMIN_PASS=@ADMIN_PASS@
+ADMIN_EMAIL=@ADMIN_EMAIL@
+
+# CPU cores a single job may use, and how long results are kept (days)
+CORES_PER_JOB=@CORES_PER_JOB@
+MAX_RESULTS_AGE=30
+# Genomes one job may contain in the multi-genome tools (genome screen, DefenseFinder, PADLOC, GenoVi, RRE-Finder)
+MAX_GENOMES_PER_JOB=20
+
+# E-mail: job notifications for users, failure reports for the administrator
+SENDER_EMAIL=@SENDER_EMAIL@
+EMAIL_HOST=localhost
+EMAIL_PORT=25
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+EMAIL_USE_TLS=False
+
+# Optional user accounts: people can always use the tools without logging in. With accounts they see their previous jobs
+# (and those of their group). ACCOUNTS_ENABLED=True turns login/"my jobs"/groups on; ALLOW_SIGNUP=True lets visitors register
+# themselves (otherwise you create accounts in the admin).
+ACCOUNTS_ENABLED=False
+ALLOW_SIGNUP=False
+
+# Optional: only accept notification e-mail addresses whose domain matches one of these regular expressions (comma separated),
+# e.g. example\.org,.*\.edu - or use the admin (E-mail policy). Empty = any address.
+NOTIFICATION_EMAIL_DOMAINS=
+
+# Monitoring, queues and API (see production.django.example for the full list)
+API_ENABLED=True
+NOTIFY_WEBHOOK_URL=

@@ -1,0 +1,69 @@
+{% extends "results.html" %}
+
+{% block results %}
+<style>
+    .bs-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; }
+    .bs-tabs button { cursor: pointer; border: 1px solid var(--button-color, #005aa2); background: #fff; color: var(--button-color, #005aa2); padding: 6px 14px; border-radius: 4px; font-size: 0.95rem; }
+    .bs-tabs button.active { background: var(--button-color, #005aa2); color: #fff; }
+    .bs-viewer { width: 100%; height: calc(100vh - 230px); min-height: 520px; border: 1px solid #ddd; background: #fff; }
+</style>
+
+<div id="bigscapeResults_div">
+    <div style="padding-left: 0; margin-left: 20px; margin-right: 20px;">
+        <h4>BiG-SCAPE Gene Cluster Families:</h4>
+
+        <div class="bs-tabs" role="tablist">
+            {% if viewerUrl %}<button type="button" role="tab" class="bs-tab active" data-target="bs-viewer-panel">Interactive viewer</button>{% endif %}
+            <button type="button" role="tab" class="bs-tab{% if not viewerUrl %} active{% endif %}" data-target="bs-table-panel">Families table <span style="opacity: .8; font-size: .85rem;">({{ familyCount }} famil{{ familyCount|pluralize:"y,ies" }}, {{ recordCount }} BGC{{ recordCount|pluralize }})</span></button>
+        </div>
+
+        {% if viewerUrl %}
+        <div class="bs-panel" id="bs-viewer-panel" role="tabpanel">
+            <p style="color: #555; margin: 4px 0 8px;">The BiG-SCAPE viewer: run information, family network, family trees and domain architectures.
+                <a href="{{ viewerUrl }}" target="_blank" rel="noopener">Open it in its own tab</a> for more room.</p>
+            <iframe class="bs-viewer" src="{{ viewerUrl }}" title="BiG-SCAPE viewer"></iframe>
+        </div>
+        {% endif %}
+
+        <div class="bs-panel" id="bs-table-panel" role="tabpanel"{% if viewerUrl %} hidden{% endif %}>
+            {% if resultsTable %}
+            <div style="max-height: 65vh; overflow: auto;">
+                {{ resultsTable|safe }}
+            </div>
+            {% else %}
+            <p>No families were produced.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            var tableInitialised = false;
+            function initTable() {
+                if (tableInitialised || !document.getElementById('bigscapeResultsTable')) { return; }
+                tableInitialised = true;
+                new DataTable('#bigscapeResultsTable', {
+                    language: { searchPlaceholder: 'Filter results' },
+                    layout: {
+                        topStart: 'search',
+                        bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                        topEnd: null,
+                        bottomEnd: 'pageLength'
+                    },
+                    pageLength: 25
+                });
+            }
+            {% if not viewerUrl %}initTable();{% endif %}
+            // The table is initialised when first shown so DataTables can size its columns.
+            $('.bs-tab').on('click', function() {
+                var target = $(this).data('target');
+                $('.bs-tab').removeClass('active');
+                $(this).addClass('active');
+                $('.bs-panel').attr('hidden', true);
+                $('#' + target).removeAttr('hidden');
+                if (target === 'bs-table-panel') { initTable(); }
+            });
+        });
+    </script>
+</div>
+{% endblock results %}

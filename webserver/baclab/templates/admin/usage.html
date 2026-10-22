@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main">
+  <form method="get" style="margin-bottom: 14px;">
+    <label>Month <input type="month" name="month" value="{{ month }}"></label>
+    <button type="submit" class="button">Show</button>
+    <a href="?month={{ month }}&amp;format=csv">Download CSV</a>
+  </form>
+  <p>{{ total_jobs }} job{{ total_jobs|pluralize }} submitted in {{ month }}. Wall hours are the time jobs actually ran; CPU hours are an
+     estimate (wall hours &times; {{ cores }} cores per job) to help share the cost of the server.</p>
+  {% for title, rows in tables %}
+  <h2>{{ title }}</h2>
+  <table style="width: 100%">
+    <thead><tr><th>Name</th><th>Jobs</th><th>Failed</th><th>Wall hours</th><th>CPU hours (est.)</th></tr></thead>
+    <tbody>
+      {% for row in rows %}<tr><td>{{ row.name }}</td><td>{{ row.jobs }}</td><td>{{ row.failed }}</td><td>{{ row.wall_hours }}</td><td>{{ row.cpu_hours }}</td></tr>
+      {% empty %}<tr><td colspan="5">No jobs.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% endfor %}
+</div>
+{% endblock %}

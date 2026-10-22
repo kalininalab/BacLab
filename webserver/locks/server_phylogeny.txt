@@ -1,0 +1,18 @@
+# Everything that is installed in the conda environment 'server_phylogeny' of the tested BacLab 1.0.0 image (name=version=build; pip::name==version for pip packages).
+# A record of the working set. The environment files (conda_environments/, tools/*/install/) pin the packages they list to these versions.
+_openmp_mutex=4.5=20_gnu
+fasttree=2.2.0=h7b50bb2_1
+gawk=5.4.1=h0a3468a_0
+gmp=6.3.0=hfd2156b_3
+iqtree=3.1.2=h8471819_0
+libasprintf=0.25.1=h0e23cf9_2
+libgcc=16.2.0=ha9f2e26_7
+libgcc-ng=16.2.0=h69a702a_7
+libgettextpo=0.25.1=h0e23cf9_2
+libgomp=16.2.0=he0feb66_7
+libiconv=1.18=h0cb94f2_3
+libstdcxx=16.2.0=h934c35e_7
+mafft=7.525=h56fdecd_0
+mpfr=4.2.2=ha2cb11d_1
+ncurses=6.6=hdb14827_1
+readline=8.3=hd6e31c0_1

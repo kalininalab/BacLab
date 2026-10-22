@@ -1,0 +1,10 @@
+name: server_cblaster
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+  - r
+  - mlin
+dependencies:
+  - cblaster==1.4.0
+  - genomicsqlite==0.9.4

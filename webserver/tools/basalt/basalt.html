@@ -1,0 +1,74 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} BASALT {% endblock %}
+
+{% block accepted_files %} .fasta, .fa, .fna, .fastq, .fastq.gz, .fq, .fq.gz {% endblock %}
+
+{% block hiddenStatusInputButtonsDiv %} hide {% endblock %}
+
+{% block toolEntries %}
+<div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 50px; margin-right: 50px;">
+    <p>Bin a metagenome assembly into genomes (MAGs). Upload the assembly (FASTA) and the paired-end short reads it was assembled from (both mates). This is a heavy analysis and can run for hours.</p>
+
+    <div class="compact-file-field">
+        <div class="btn btn-small">
+            <span>Assembly (required)</span>
+            <input id="assembly" type="file" name="assembly" accept=".fasta,.fa,.fna" onchange="showBasaltFileName(this, 'assembly-name')">
+        </div>
+        <span id="assembly-name" class="compact-file-name"></span>
+    </div>
+
+    <div class="compact-file-field">
+        <div class="btn btn-small">
+            <span>Read 1 (required)</span>
+            <input id="read1" type="file" name="read1" accept=".fastq,.fastq.gz,.fq,.fq.gz,.gz" onchange="showBasaltFileName(this, 'read1-name')">
+        </div>
+        <span id="read1-name" class="compact-file-name"></span>
+    </div>
+
+    <div class="compact-file-field">
+        <div class="btn btn-small">
+            <span>Read 2 (required)</span>
+            <input id="read2" type="file" name="read2" accept=".fastq,.fastq.gz,.fq,.fq.gz,.gz" onchange="showBasaltFileName(this, 'read2-name')">
+        </div>
+        <span id="read2-name" class="compact-file-name"></span>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <label for="sensitivity">Binning sensitivity:</label>
+        <select name="sensitivity" id="sensitivity" class="browser-default">
+            <option value="quick" selected>Quick</option>
+            <option value="sensitive">Sensitive</option>
+            <option value="more-sensitive">More sensitive (slowest)</option>
+        </select>
+    </div>
+</div>
+
+<script>
+    function showBasaltFileName(inputElement, targetId) {
+        var fileName = inputElement.files.length ? inputElement.files[0].name : "";
+        document.getElementById(targetId).textContent = fileName ? "Selected file: " + fileName : "";
+    }
+</script>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    function checkFields(){
+        var ids = ['assembly', 'read1', 'read2'];
+        var labels = ['an assembly', 'a read 1 file', 'a read 2 file'];
+        for (var i = 0; i < ids.length; i++) {
+            if (!document.getElementById(ids[i]).files.length) {
+                alert('Please upload ' + labels[i] + '.');
+                return false;
+            }
+        }
+        return true;
+    }
+</script>
+{% endblock %}
+
+{% block windowonloadjstoolspecific %}
+    document.getElementById('fasta-input-container').hidden = true;
+    document.getElementById('upload-input-container').hidden = true;
+{% endblock %}

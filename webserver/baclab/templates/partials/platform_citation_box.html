@@ -1,0 +1,11 @@
+<div class="citation-box" style="margin: 20px 50px; padding: 12px 16px; background: #eef6f3; border-left: 4px solid #2f6f5e; font-size: 0.85em; color: #444; max-width: 75%;">
+    <strong>Using these results in your own work?</strong> Please also cite BacLab itself:
+    <div style="margin: 6px 0 0;">
+        {{ citation.text }}
+        {% if citation.url %}
+            <a href="{{ citation.url }}" target="_blank" rel="noopener">[link]</a>
+        {% else %}
+            <em>(manuscript in preparation - check back here for a DOI)</em>
+        {% endif %}
+    </div>
+</div>

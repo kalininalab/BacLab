@@ -1,0 +1,17 @@
+{% extends "results.html" %}
+
+{% block results %}
+<div class="row">
+    <div class="col s12">
+        <h5 class="center-align">fastp QC Complete</h5>
+        <div style="margin: 20px;">
+            <p>Your read quality control is complete.</p>
+            <p>Click the <b>"Download results"</b> button above to download a ZIP archive containing the filtered reads and the HTML/JSON reports.</p>
+        </div>
+        
+        <div style="width: 100%; height: 800px; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; margin-top: 20px;">
+            <iframe src="{% url 'baclab:fastp_file' job_id 'fastp.html' %}" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+    </div>
+</div>
+{% endblock results %}

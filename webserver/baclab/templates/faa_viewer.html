@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block css %}
+
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<script type="text/javascript" src="{% static 'js/datatables.min.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables.min.css' %}">
+
+<style>
+    .seq-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: monospace;
+    }
+
+    /* The text part */
+    .seq-text {
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    /* The button part - using standard CSS for look and feel */
+    .copy-btn-simple {
+        padding: 2px 6px;
+        font-size: 12px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        user-select: none;
+    }
+
+    .copy-btn-simple:hover {
+        background-color: #e2e6ea;
+    }
+
+    .copy-btn-simple:active {
+        background-color: #dae0e5;
+    }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="col s12 m8 offset-m2">
+
+    <div class="col s12 m8 offset-m2" style="margin: 20px; margin-left: 50px;">
+        <h4 class="pagetitle">
+
+        {% block strains_name %} {% endblock %}
+
+        </h4>
+
+        <div id="StrainsTable_div" class="">    
+            <div style="display: flex; justify-content: space-between;">
+                <div style="width: 100%; margin-right: 20px;" id="blastTabularTable" class="">
+                    <!-- BlastResultsTable table -->
+                    <div style="padding-left: 0; margin-left: 20px;">
+                        <h4>Proteins for: {{strain_name}}</h4>
+
+                        <button id="downloadFAA" class="btn" style="width: 18%; margin-left: 20px" onclick="downloadFaa();">Download FAA file</button>
+                        <button id="downloadGBK" class="btn" style="width: 18%; margin-left: 20px" onclick="downloadGbk();">Download GBK file</button>
+
+                        <script>
+                            function downloadFaa() {
+                                const strain = "{{ strain_name }}"; // Ensure this variable is passed from your view
+                                window.location.href = `/download/faa/${strain}/`;
+                            }
+
+                            function downloadGbk() {
+                                const strain = "{{ strain_name }}";
+                                window.location.href = `/download/gbk/${strain}/`;
+                            }
+                        </script>
+
+                        <div style="height: 75vh; overflow: auto;">
+                            {{ faaTable|safe }}
+                        </div>
+                    </div>
+                    <script>
+                            $(document).ready(function() {
+                                const table = new DataTable('#faaTable', {
+                                    language: { searchPlaceholder: 'Filter results' },
+                                    layout: {
+                                        topStart: 'search',
+                                        bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                                        topEnd: null,
+                                        bottomEnd: 'pageLength'
+                                    },
+                                    columnDefs: [
+                                        {
+                                            targets: 1, // Sequence column
+                                            render: function(data, type, row) {
+                                                if (type === 'display' && data) {
+                                                    // We use a Unicode clipboard symbol 📋 instead of a 3rd party icon
+                                                    return `
+                                                        <div class="seq-container">
+                                                            <span class="seq-text" title="${data}">${data}</span>
+                                                            <button class="copy-btn-simple" onclick="simpleCopy('${data}', this)">
+                                                                📋
+                                                            </button>
+                                                        </div>`;
+                                                }
+                                                return data;
+                                            }
+                                        }
+                                    ],
+                                    pageLength: 100
+                            });
+                        });
+
+                        function simpleCopy(text, btn) {
+                            navigator.clipboard.writeText(text).then(function() {
+                                const originalText = btn.innerText;
+                                btn.innerText = '✅'; // Change icon to checkmark on success
+                                btn.style.borderColor = 'green';
+                                
+                                setTimeout(function() {
+                                    btn.innerText = originalText;
+                                    btn.style.borderColor = '#ccc';
+                                }, 1000);
+                            }).catch(function(err) {
+                                alert('Could not copy text: ', err);
+                            });
+                        }
+                    </script>
+                    
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

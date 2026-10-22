@@ -1,0 +1,37 @@
+<table class="striped">
+  <thead>
+    <tr>
+      <th>Job</th>
+      <th>Tool</th>
+      <th>Status</th>
+      <th>Result</th>
+      <th>Submitted</th>
+      {% if show_owner %}<th>User</th>{% endif %}
+      <th>Results kept until</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for job in jobs %}
+    <tr>
+      <td>
+        {% if job.label %}<span class="job-label">{{ job.label }}</span>{% endif %}
+        <a class="job-id" href="{% url 'baclab:results' %}?job_id={{ job.job_id }}">{{ job.job_id }}</a>
+        <button type="button" class="copy-btn" data-copy="{% url 'baclab:results' %}?job_id={{ job.job_id }}" title="Copy link to the results">copy link</button>
+      </td>
+      <td>{{ job.tool_label }}</td>
+      <td><span class="status-badge status-{{ job.status }}">{{ job.get_status_display }}</span></td>
+      <td>
+        {% if job.summary.headline %}<span class="finding finding-{{ job.summary.status|default:'none' }}">{{ job.summary.headline }}</span>
+        {% elif job.status == 'failed' %}<span class="finding finding-bad">No results &ndash; see details</span>
+        {% elif job.is_active %}<span class="muted">in progress&hellip;</span>
+        {% else %}<a href="{% url 'baclab:results' %}?job_id={{ job.job_id }}">open results</a>{% endif %}
+      </td>
+      <td title="{{ job.queued_at|date:'Y-m-d H:i' }}">{{ job.queued_at|timesince }} ago</td>
+      {% if show_owner %}<td>{{ job.owner.username }}</td>{% endif %}
+      <td><span{% if job.expires_soon %} class="expires-soon"{% endif %} title="{{ job.days_left }} days left">{{ job.expires_at|date:"Y-m-d" }}</span>{% if job.retention_days %} <span class="muted" title="Extended by the owner">&#9733;</span>{% endif %}</td>
+      <td><a href="{% url 'baclab:job_detail' job.job_id %}">details</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

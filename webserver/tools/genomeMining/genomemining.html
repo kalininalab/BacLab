@@ -1,0 +1,81 @@
+{% extends "tool_base.html" %}
+
+{% block toolname %} Genome Mining {% endblock %}
+{% block tool_description %}
+Mine genomes for specific secondary metabolite clusters. <strong>Expected input:</strong> Assembled genomes in FASTA format <code>(.fasta, .fna, .faa)</code>.
+{% endblock %}
+
+
+{% block accepted_files %} .fasta, .fna, .faa {% endblock %}
+
+{% block toolEntries %}
+  <div class="col s12 m8 offset-m2" style="width: 75%; margin-top: 20px; margin-left: 20px; margin-right: 50px;">
+    
+    {% if not database_options %}
+    <div class="col s12 m8 offset-m2" style="margin: 20px;">
+        <div class="card-panel red lighten-4 red-text text-darken-4">
+            <b>Warning:</b> No Genome Mining custom databases exist yet! Please go to the Admin Panel to create a Genome Mining custom database before submitting jobs.
+        </div>
+    </div>
+    {% else %}
+    <div class="col s12 m8 offset-m2" style="margin: 20px;">
+        <label for="database" style="font-size: 1.2rem;">Select Database: <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Select the custom antiSMASH/Genome Mining database to search against">❓</i></label>
+        <select class="browser-default" name="database" id="database">
+            {% for option in database_options %}
+                <option value="{{ option.value }}">{{ option.label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+
+    <div class="col s12 m8 offset-m2" style="margin: 20px;">
+        <p>
+            <label style="font-size: 1.2rem;">
+                <input name="run_homolog" type="checkbox" value="yes" id="run_homolog_checkbox" />
+                <span>Run Homolog Search? <i class="material-icons tiny tooltipped" data-position="right" data-tooltip="Check to run an extensive homolog search against known clusters (only available for single sequence inputs)">❓</i></span>
+            </label>
+        </p>
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block toolSpecificChecks %}
+<script>
+    {% if not database_options %}
+    document.addEventListener("DOMContentLoaded", function() {
+        const submitBtn = document.getElementById("submitButton");
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.backgroundColor = "grey";
+            submitBtn.value = "Disabled (No Custom DB)";
+        }
+    });
+    {% endif %}
+    function checkFields() {
+        const useExample = document.getElementById("use_example_data");
+        if (useExample && (useExample.value === "true" || useExample.value === "1")) {
+            return true;
+        }
+        const run_homolog_checkbox = document.getElementById('run_homolog_checkbox');
+        let run_homolog = run_homolog_checkbox && run_homolog_checkbox.checked ? 'yes' : 'no';
+
+        if (run_homolog === 'yes'){
+            const inputType = document.getElementById('input-type').value;
+            
+            if(inputType === 'fasta') {
+                const fasta_input = document.getElementById('fasta').value;
+                const sequence_count = (fasta_input.match(/>/g) || []).length;
+                
+                if (sequence_count > 1){
+                    alert("Only one sequence is allowed if you run homolog search.");
+                    return false;
+                }
+            }
+            // If file upload is used, the backend will perform the check
+        }
+
+        return true;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "results.html" %}
+
+{% block results %}
+<div id="genericResults_div">
+    <div style="padding-left: 0; margin-left: 20px;">
+        <h4>{{ tableTitle }}:</h4>
+        {% if note %}<p>{{ note }}</p>{% endif %}
+        <div style="max-height: 60vh; overflow: auto;">
+            {{ resultsTable|safe }}
+        </div>
+    </div>
+    <script>
+        $(document).ready(function() {
+            new DataTable('#{{ tableId }}', {
+                language: { searchPlaceholder: 'Filter results' },
+                layout: {
+                    topStart: 'search',
+                    bottomStart: { paging: { numbers: true, boundaryNumbers: true } },
+                    topEnd: null,
+                    bottomEnd: 'pageLength'
+                },
+                pageLength: 25
+            });
+        });
+    </script>
+</div>
+{% endblock results %}

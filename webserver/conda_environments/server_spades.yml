@@ -1,0 +1,12 @@
+name: server_spades
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.10.22
+  - spades==4.3.0
+  - fastp==1.4.0
+  - quast==5.3.0
+  - checkm-genome==1.2.5
+  - multiqc==1.35

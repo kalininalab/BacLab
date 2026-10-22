@@ -1,0 +1,10 @@
+name: server_bigscape
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bigscape==2.0.3
+  # bioconda's recipe leaves sqlalchemy unpinned; 2.1.x breaks BiG-SCAPE's DB.execute() ("Not an
+  # executable object"). Upstream's own environment.yml pins 2.0.x.
+  - sqlalchemy==2.0.54

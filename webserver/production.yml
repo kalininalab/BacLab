@@ -1,0 +1,121 @@
+version: '3.7'
+
+volumes:
+  production_postgres_data: {}
+  production_postgres_data_backups: {}
+  media_content: {}
+
+x-djangobase: &django-base
+  image: baclab_production_django
+  init: true
+  # All application containers share files (uploads, results, databases). With SELinux every container normally gets its own random
+  # category, so files one container creates are unreadable for the others; giving them one common level fixes that while they stay
+  # separated from every other container on the host.
+  security_opt:
+    - "label=level:s0:c100,c200"
+  depends_on:
+    - postgres
+    - redis
+  env_file:
+    - ./.envs/.production/.django
+    - ./.envs/.production/.postgres
+  volumes:
+    - media_content:/app/baclab/media:z
+    - ../databases:/databases:${DB_MODE:-ro,z}
+    - ../data:/data/:${DATA_MODE:-rw,z}
+  restart: unless-stopped
+
+
+services:
+  django:
+    <<: *django-base
+    build:
+      context: .
+      dockerfile: ./compose/production/django/Dockerfile
+      args:
+        INSTALL_LDAP: ${INSTALL_LDAP:-0}
+    command: /start
+
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: baclab_production_postgres
+    volumes:
+      - production_postgres_data:/var/lib/postgresql/data
+      - production_postgres_data_backups:/backups
+    env_file:
+      - ./.envs/.production/.postgres
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./compose/production/nginx/Dockerfile
+    image: baclab_production_nginx
+    security_opt:
+      - "label=level:s0:c100,c200"
+    depends_on:
+      - django
+      - celeryworker
+    volumes:
+      - media_content:/media:z
+      - ../certs:/certs/:${DB_MODE:-ro,z}
+      - ../databases/AntismashResults:/databases/AntismashResults:${DB_MODE:-ro,z}
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+
+  redis:
+    image: redis:5.0.14
+    restart: unless-stopped
+
+  celeryworker:
+    <<: *django-base
+    command: /start-celeryworker
+    # The main worker also builds the databases and strains that administrators add in the admin, so unlike the web container it may
+    # write to /databases (DB_WORKER_MODE=rw also on network file systems, see webserver/.env).
+    volumes:
+      - media_content:/app/baclab/media:z
+      - ../databases:/databases:${DB_WORKER_MODE:-rw,z}
+      - ../data:/data/:${DATA_MODE:-rw,z}
+    deploy:
+      resources:
+        limits:
+          # Sized to the machine by `./baclab install` (webserver/.env); BASALT alone asks for 128 GB
+          cpus: '${WORKER_CPUS:-4}'
+          memory: ${WORKER_MEMORY:-16GB}
+    environment:
+      CELERY_WORKER_CONCURRENCY: ${CELERY_WORKER_CONCURRENCY:-2}
+
+  # Second worker that only takes the quick jobs ("fast" queue), so they never wait behind a day-long heavy job
+  celeryworker_light:
+    <<: *django-base
+    command: /start-celeryworker
+    deploy:
+      resources:
+        limits:
+          cpus: '${LIGHT_WORKER_CPUS:-2}'
+          memory: ${LIGHT_WORKER_MEMORY:-8GB}
+    environment:
+      CELERY_QUEUES: fast
+      CELERY_WORKER_CONCURRENCY: ${LIGHT_WORKER_CONCURRENCY:-2}
+
+  # Maintenance container for `./baclab db ...`: the same image, with /databases writable (the other containers only read it)
+  # and as root so it can write whatever the host user owns. Not started by `up`; run on demand with `--profile tools`.
+  dbtools:
+    <<: *django-base
+    profiles: ["tools"]
+    depends_on: []
+    user: root
+    restart: "no"
+    entrypoint: ["/usr/bin/env"]   # no wait for postgres: only the databases folder is needed
+    command: ["true"]
+    volumes:
+      - ../databases:/databases:${DB_WRITE_MODE:-rw,z}
+      - ../data:/data/:${DATA_MODE:-rw,z}
+
+  celerybeat:
+    <<: *django-base
+    command: /start-celerybeat

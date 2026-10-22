@@ -1,0 +1,14 @@
+.section-live-preview {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px 14px;
+    background: #fff;
+    min-height: 40px;
+    max-width: 600px;
+}
+
+.field-preview > label::after {
+    content: " (updates as you type)";
+    font-weight: normal;
+    color: #666;
+}
